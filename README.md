@@ -1,5 +1,7 @@
 # CitiNav
 
+*Project 3 — Emerging Tech*
+
 **Turn-by-turn bicycle navigation on a tiny screen.** The phone is the brain; a
 cheap ESP32-C6 + 1.47" LCD on the handlebars is a *dumb display* that just shows
 the next turn — no need to look at the phone while riding.
