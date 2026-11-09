@@ -46,6 +46,9 @@ cloudflared tunnel --url http://localhost:8000   # https for the phone
 ```
 Open the https URL → **Connect device** → pick a destination → **Go**.
 
+> 📶 Full step-by-step, including the **Cloudflare Tunnel** setup, is in
+> [`docs/SETUP.md`](docs/SETUP.md).
+
 **Mac quick test** (no tunnel):
 ```bash
 ./citinav_send.py "L:Broadway:45"        # left arrow + street + 45 m
@@ -55,6 +58,7 @@ Open the https URL → **Connect device** → pick a destination → **Go**.
 
 | Doc | What |
 |---|---|
+| [`docs/SETUP.md`](docs/SETUP.md) | **Setup guide** — flash, serve, **Cloudflare Tunnel**, connect |
 | [`docs/CITINAV.md`](docs/CITINAV.md) | Project plan + BLE contract |
 | [`docs/WEBAPP-TECHNICAL.md`](docs/WEBAPP-TECHNICAL.md) · [`.html`](docs/WEBAPP-TECHNICAL.html) | Full technical reference (HTML has all code embedded) |
 | [`docs/CITINAV-MOBILEAPP-PLAN.md`](docs/CITINAV-MOBILEAPP-PLAN.md) | Native Android plan (notification mirroring) |

@@ -5,6 +5,7 @@ All project markdown lives here. Source code stays in the project root
 
 | Doc | What it covers |
 |---|---|
+| [SETUP.md](SETUP.md) | **Setup guide**: flash the device, serve the app, expose it to the phone via a **Cloudflare Tunnel**, connect |
 | [CITINAV.md](CITINAV.md) | Project plan: **Part 1 Devices** + **Part 2 Mobile app**, the shared **BLE contract**, and the simulators (terminal + Web Bluetooth) |
 | [WEBAPP-TECHNICAL.md](WEBAPP-TECHNICAL.md) | **Technical reference** for the web apps: architecture, BLE contract, nav engine, firmware, data-flow & sequence diagrams |
 | [WEBAPP-TECHNICAL.html](WEBAPP-TECHNICAL.html) | **Rendered HTML** of the technical reference — self-contained, with **all source code embedded** (rebuild: `python3 docs/build_html.py`) |
@@ -15,6 +16,7 @@ All project markdown lives here. Source code stays in the project root
 
 ## Quick orientation
 
+- **Setting it up (incl. the tunnel)?** → [SETUP.md](SETUP.md)
 - **New to the project?** → [CITINAV.md](CITINAV.md) (start here)
 - **How the web apps work?** → [WEBAPP-TECHNICAL.md](WEBAPP-TECHNICAL.md)
 - **Building the UI?** → [GUI-DESIGN.md](GUI-DESIGN.md)
