@@ -1,0 +1,3321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CitiNav — Web App Technical Reference</title>
+<style>
+  :root{--bg:#1b1b1b;--panel:#242424;--panel2:#2e2e2e;--text:#e6e6e6;--muted:#9a9a9a;
+    --green:#00dc50;--yellow:#ffd700;--line:#3a3a3a;--code:#141414;}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:16px/1.6 -apple-system,system-ui,Segoe UI,Roboto,sans-serif;}
+  a{color:var(--green);text-decoration:none} a:hover{text-decoration:underline}
+  .layout{display:flex;max-width:1400px;margin:0 auto}
+  nav.toc{position:sticky;top:0;align-self:flex-start;width:290px;height:100vh;overflow:auto;
+    padding:22px 16px;border-right:1px solid var(--line);background:var(--panel)}
+  nav.toc h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px}
+  nav.toc a{display:block;color:var(--text);font-size:13.5px;padding:4px 8px;border-radius:6px}
+  nav.toc a.lvl3{padding-left:22px;color:var(--muted);font-size:12.5px}
+  nav.toc a:hover{background:var(--panel2);text-decoration:none}
+  nav.toc .brand{color:var(--yellow);font-weight:700;font-size:18px;margin-bottom:14px;display:block}
+  main{flex:1;min-width:0;padding:34px 44px 120px;max-width:1000px}
+  h1{color:var(--yellow);font-size:30px;margin:0 0 6px}
+  h2{margin-top:44px;padding-top:10px;border-top:1px solid var(--line);font-size:23px}
+  h3{margin-top:28px;font-size:18px;color:#cfcfcf}
+  p{margin:12px 0}
+  code{background:var(--code);border:1px solid var(--line);border-radius:5px;
+    padding:1px 5px;font:13.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;color:#d7ffd7}
+  pre{margin:14px 0;background:var(--code);border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;overflow:auto}
+  pre code{background:none;border:0;padding:0;color:#d7ffd7;font-size:13px;line-height:1.5}
+  table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:#fff}
+  tr:nth-child(even) td{background:#202020}
+  blockquote{margin:16px 0;padding:10px 16px;border-left:3px solid var(--yellow);
+    background:#26241a;color:#e8e2c0;border-radius:0 8px 8px 0}
+  hr{border:0;border-top:1px solid var(--line);margin:30px 0}
+  ul,ol{margin:12px 0;padding-left:24px} li{margin:5px 0}
+  .lead{color:var(--muted);font-size:15px}
+  .toolbar{display:flex;gap:10px;margin:18px 0 6px;flex-wrap:wrap}
+  .toolbar button{font:inherit;font-size:13px;color:var(--text);background:var(--panel2);
+    border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer}
+  .toolbar button:hover{border-color:var(--green)}
+  details.file{border:1px solid var(--line);border-radius:10px;margin:12px 0;background:var(--panel)}
+  details.file>summary{cursor:pointer;padding:12px 16px;display:flex;justify-content:space-between;
+    gap:12px;align-items:center;list-style:none}
+  details.file>summary::-webkit-details-marker{display:none}
+  details.file>summary::before{content:"▸";color:var(--green);margin-right:8px}
+  details.file[open]>summary::before{content:"▾"}
+  .fname{font:13.5px ui-monospace,Menlo,monospace;color:var(--yellow)}
+  .fmeta{color:var(--muted);font-size:12px;white-space:nowrap}
+  .codewrap{position:relative;border-top:1px solid var(--line)}
+  .codewrap pre{margin:0;border:0;border-radius:0 0 10px 10px;max-height:70vh}
+  .copy{position:absolute;top:8px;right:10px;z-index:2;font:12px inherit;color:var(--text);
+    background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 9px;cursor:pointer}
+  .copy:hover{border-color:var(--green)}
+  @media(max-width:900px){nav.toc{display:none}main{padding:22px 18px 100px}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <span class="brand">CitiNav</span>
+    <h2>Contents</h2>
+    <a class="lvl2" href="#1-purpose-scope">1. Purpose &amp; scope</a>
+<a class="lvl2" href="#2-system-architecture">2. System architecture</a>
+<a class="lvl3" href="#2-1-context">2.1 Context</a>
+<a class="lvl3" href="#2-2-components">2.2 Components</a>
+<a class="lvl3" href="#2-3-why-a-tunnel-secure-context">2.3 Why a tunnel (secure context)</a>
+<a class="lvl2" href="#3-the-ble-contract">3. The BLE contract</a>
+<a class="lvl3" href="#3-1-gatt-nordic-uart-service-uuids">3.1 GATT (Nordic UART Service UUIDs)</a>
+<a class="lvl3" href="#3-2-command-payload-grammar">3.2 Command payload grammar</a>
+<a class="lvl3" href="#3-3-ack">3.3 Ack</a>
+<a class="lvl3" href="#3-4-connection-lifecycle">3.4 Connection lifecycle</a>
+<a class="lvl2" href="#4-web-app-architecture">4. Web app architecture</a>
+<a class="lvl3" href="#4-1-files-pwa-shell">4.1 Files &amp; PWA shell</a>
+<a class="lvl3" href="#4-2-hosting">4.2 Hosting</a>
+<a class="lvl2" href="#5-nav-app-index-html">5. Nav app (index.html)</a>
+<a class="lvl3" href="#5-1-data-flow">5.1 Data flow</a>
+<a class="lvl3" href="#5-2-routing-valhalla">5.2 Routing (Valhalla)</a>
+<a class="lvl3" href="#5-3-polyline-decoding">5.3 Polyline decoding</a>
+<a class="lvl3" href="#5-4-maneuver-model-direction-mapping">5.4 Maneuver model &amp; direction mapping</a>
+<a class="lvl3" href="#5-5-progress-tracking">5.5 Progress tracking</a>
+<a class="lvl3" href="#5-6-command-emission-state-machine">5.6 Command-emission state machine</a>
+<a class="lvl3" href="#5-7-pseudocode">5.7 Pseudocode</a>
+<a class="lvl3" href="#5-8-sequence-one-turn">5.8 Sequence (one turn)</a>
+<a class="lvl2" href="#6-test-app-test-html">6. Test app (test.html)</a>
+<a class="lvl3" href="#6-1-map-destination">6.1 Map &amp; destination</a>
+<a class="lvl3" href="#6-2-google-maps-handoff">6.2 Google Maps handoff</a>
+<a class="lvl3" href="#6-3-manual-controls">6.3 Manual controls</a>
+<a class="lvl2" href="#7-firmware-citinavlandscape-py">7. Firmware (citinav_landscape.py)</a>
+<a class="lvl3" href="#7-1-boot-sequence">7.1 Boot sequence</a>
+<a class="lvl3" href="#7-2-ble-setup-irq">7.2 BLE setup &amp; IRQ</a>
+<a class="lvl3" href="#7-3-command-parsing">7.3 Command parsing</a>
+<a class="lvl3" href="#7-4-main-loop-rendering">7.4 Main loop &amp; rendering</a>
+<a class="lvl3" href="#7-5-re-advertise-fix-important">7.5 Re-advertise fix (important)</a>
+<a class="lvl3" href="#7-6-firmware-main-loop-flowchart">7.6 Firmware main-loop flowchart</a>
+<a class="lvl2" href="#8-end-to-end-sequence-nav-session">8. End-to-end sequence (Nav session)</a>
+<a class="lvl2" href="#9-configuration-tuning">9. Configuration &amp; tuning</a>
+<a class="lvl2" href="#10-failure-modes-troubleshooting">10. Failure modes &amp; troubleshooting</a>
+<a class="lvl2" href="#11-privacy-security">11. Privacy &amp; security</a>
+<a class="lvl2" href="#12-file-map">12. File map</a>
+<a class="lvl2" href="#13-limitations-future-work">13. Limitations &amp; future work</a>
+    <h2 style="margin-top:18px">Source code</h2>
+    <a href="#source-code">All files</a>
+  </nav>
+  <main>
+    <h1 id="citinav-web-app-technical-reference">CitiNav Web App — Technical Reference</h1>
+<p><em>How the browser-based CitiNav apps work: architecture, the BLE contract, the navigation engine, the firmware, and the end-to-end data flow.</em></p>
+<p><strong>Audience:</strong> anyone maintaining or extending the web apps or the device firmware. For the product plan see <a href="CITINAV.md"><code>CITINAV.md</code></a> and <a href="CITINAV-MOBILEAPP-PLAN.md"><code>CITINAV-MOBILEAPP-PLAN.md</code></a>.</p>
+<blockquote><p>📄 A <strong>self-contained HTML version with all source code embedded</strong> is at <a href="WEBAPP-TECHNICAL.html"><code>WEBAPP-TECHNICAL.html</code></a>. Rebuild it after editing this file with <code>python3 docs/build_html.py</code>.</p></blockquote>
+<hr>
+<h2 id="1-purpose-scope">1. Purpose &amp; scope</h2>
+<p>CitiNav is a <strong>dumb display</strong>: an ESP32-C6 with a 1.47" LCD that renders a direction arrow + street name. A phone is the "brain". This document covers the <strong>web implementation of the brain</strong>:</p>
+<table><thead><tr><th>App</th><th>File</th><th>Role</th></tr></thead><tbody><tr><td><strong>Nav</strong></td><td><code>webapp/index.html</code></td><td>Self-routing navigation: computes a route, tracks GPS, and <strong>auto-sends</strong> turn commands to the device.</td></tr><tr><td><strong>Test</strong></td><td><code>webapp/test.html</code></td><td>Map destination picker + <strong>Google Maps handoff</strong>, plus <strong>manual</strong> BLE controls.</td></tr></tbody></table>
+<p>Both speak the same BLE contract (§3) and run in <strong>Chrome on Android/desktop</strong> (Web Bluetooth is unavailable on iOS).</p>
+<hr>
+<h2 id="2-system-architecture">2. System architecture</h2>
+<h3 id="2-1-context">2.1 Context</h3>
+<pre class="md-code"><code class="lang-">                         ┌──────────────────────────────┐
+                         │  External services (HTTPS)    │
+                         │  • Valhalla  (routing)        │
+                         │  • Photon    (geocoding)      │
+                         │  • OSM tiles (map)            │
+                         │  • Google Maps (handoff)      │
+                         └───────────────▲──────────────┘
+                                         │ fetch / open
+ ┌────────────────────┐   HTTPS (page)   │
+ │  Mac (host)        │◄────────────────┐│
+ │  serve.sh          │                 ││
+ │  python http.server│   cloudflared   ││
+ │  :8000             │◄───tunnel──────►││
+ └────────────────────┘                 ││
+                              ┌─────────┴┴──────────────┐
+                              │  Phone — Chrome (PWA)    │
+                              │  • Nav / Test app        │
+                              │  • Web Bluetooth (GATT)  │
+                              │  • Geolocation           │
+                              └───────────┬──────────────┘
+                                          │ BLE (GATT write / notify)
+                                          ▼
+                              ┌──────────────────────────┐
+                              │  ESP32-C6 + ST7789 LCD    │
+                              │  citinav_landscape.py     │
+                              └──────────────────────────┘</code></pre>
+<p><strong>Key point:</strong> the tunnel only <em>delivers the page</em>. Once loaded, BLE traffic is phone ↔ device and never leaves the phone. Routing/geocoding calls go directly from the phone to the public services.</p>
+<h3 id="2-2-components">2.2 Components</h3>
+<table><thead><tr><th>Component</th><th>Responsibility</th></tr></thead><tbody><tr><td><code>webapp/index.html</code></td><td>Nav app: map, routing, GPS loop, turn engine, BLE client</td></tr><tr><td><code>webapp/test.html</code></td><td>Test app: map picker, Maps handoff, manual BLE controls</td></tr><tr><td><code>webapp/manifest.json</code></td><td>PWA metadata (name, colours, icons, shortcuts)</td></tr><tr><td><code>webapp/sw.js</code></td><td>Service worker: offline app-shell cache</td></tr><tr><td><code>webapp/make_icons.py</code></td><td>Generates PNG icons (no dependencies)</td></tr><tr><td><code>webapp/serve.sh</code></td><td>LAN host + prints phone/secure-context instructions</td></tr><tr><td><code>citinav_landscape.py</code></td><td>Device firmware: BLE peripheral + LCD UI</td></tr><tr><td><code>deploy.sh</code></td><td>Copies firmware to the board and reboots</td></tr></tbody></table>
+<h3 id="2-3-why-a-tunnel-secure-context">2.3 Why a tunnel (secure context)</h3>
+<p>Web Bluetooth <strong>and</strong> Geolocation require a <strong>secure context</strong> (<code>https://</code> or <code>localhost</code>). A page served at <code>http://&lt;mac-ip&gt;:8000</code> is not secure, so Chrome blocks both APIs. A <strong>Cloudflare quick tunnel</strong> provides a temporary <code>https://…trycloudflare.com</code> origin that proxies to the Mac — no account, no certificate. Alternatives: a named tunnel + domain, <code>mkcert</code> local CA, or Chrome's <code>#unsafely-treat-insecure-origin-as-secure</code> flag.</p>
+<hr>
+<h2 id="3-the-ble-contract">3. The BLE contract</h2>
+<p>Both apps and the firmware implement this contract. It is the single source of truth shared with the native-app plan (§6 of <code>CITINAV-MOBILEAPP-PLAN.md</code>).</p>
+<h3 id="3-1-gatt-nordic-uart-service-uuids">3.1 GATT (Nordic UART Service UUIDs)</h3>
+<table><thead><tr><th>Role</th><th>UUID</th><th>Properties</th></tr></thead><tbody><tr><td>Service</td><td><code>6e400001-b5a3-f393-e0a9-e50e24dcca9e</code></td><td>—</td></tr><tr><td>Command (app → device)</td><td><code>6e400002-b5a3-f393-e0a9-e50e24dcca9e</code></td><td>WRITE, WRITE_NO_RESPONSE, READ</td></tr><tr><td>Ack (device → app)</td><td><code>6e400003-b5a3-f393-e0a9-e50e24dcca9e</code></td><td>READ, NOTIFY</td></tr></tbody></table>
+<ul><li>Advertised name: <strong><code>CitiNav</code></strong> (the app filters on <code>namePrefix: "CitiNav"</code>).</li><li>The service UUID is in the scan response, so <code>optionalServices</code> must list it.</li></ul>
+<h3 id="3-2-command-payload-grammar">3.2 Command payload grammar</h3>
+<pre class="md-code"><code class="lang-">&lt;dir&gt;[B][:&lt;street&gt;[:&lt;dist_m&gt;]]</code></pre>
+<table><thead><tr><th><code>dir</code></th><th>Meaning</th><th>Device screen</th></tr></thead><tbody><tr><td><code>L</code></td><td>turn left</td><td>3-arrow row, left highlighted</td></tr><tr><td><code>R</code></td><td>turn right</td><td>3-arrow row, right highlighted</td></tr><tr><td><code>S</code></td><td>straight / continue</td><td>3-arrow row, straight highlighted</td></tr><tr><td><code>U</code></td><td>U-turn</td><td>U-turn glyph</td></tr><tr><td><code>A</code></td><td>arrive</td><td>"ARRIVED"</td></tr><tr><td><code>X</code></td><td>clear / idle</td><td><code>CitiNav</code> boot screen</td></tr></tbody></table>
+<ul><li><code>B</code> after <code>L/R/S/U</code> = <strong>blink</strong> (<code>LB</code>, <code>RB</code>, <code>SB</code>, <code>UB</code>).</li><li><code>street</code> → top banner, ASCII, truncated to <strong>10 chars</strong>.</li><li><code>dist_m</code> → appended to the bottom label (<code>TURN LEFT  30m</code>).</li><li>Examples: <code>L</code>, <code>RB</code>, <code>U</code>, <code>A</code>, <code>X</code>, <code>L:W 4th St</code>, <code>LB:W 4th St:30</code>.</li><li>Total payload stays <strong>≤ 20 bytes</strong> (no MTU negotiation needed).</li></ul>
+<h3 id="3-3-ack">3.3 Ack</h3>
+<p>After handling a command the device notifies <code>ack:&lt;cmd&gt;</code> on the ack characteristic, e.g. <code>ack:L</code>, <code>ack:RB</code>. The apps log it; it is also a cheap round-trip latency probe.</p>
+<h3 id="3-4-connection-lifecycle">3.4 Connection lifecycle</h3>
+<pre class="md-code"><code class="lang-">app                                   device
+ │  scan (namePrefix CitiNav)           │ advertising
+ │ ───────────────────────────────────►│
+ │  connect (GATT)                      │
+ │ ───────────────────────────────────►│  IRQ: CENTRAL_CONNECT
+ │  getPrimaryService / getCharacteristic
+ │  startNotifications(ack)             │
+ │  writeValueWithResponse(cmd)         │  IRQ: GATTS_WRITE → queue
+ │ ◄─────────────────────────────────── │  notify &quot;ack:&lt;cmd&gt;&quot;
+ │  ...                                 │
+ │  disconnect                          │  IRQ: CENTRAL_DISCONNECT
+ │                                      │  → need_advertise = True
+ │                                      │  → main loop re-advertises</code></pre>
+<blockquote><p><strong>Ghost-connection caveat:</strong> a <em>soft</em> reset (Ctrl-D / <code>mpremote reset</code>) while a central is connected can leave the ESP32 controller holding a stale link, so the device neither advertises nor accepts. A <strong>hard reset / power-cycle</strong> clears it. The firmware also defers re-advertising out of the IRQ (§7.5).</p></blockquote>
+<hr>
+<h2 id="4-web-app-architecture">4. Web app architecture</h2>
+<h3 id="4-1-files-pwa-shell">4.1 Files &amp; PWA shell</h3>
+<pre class="md-code"><code class="lang-">webapp/
+├── index.html      Nav app (main)
+├── test.html       Test app (kept prototype)
+├── manifest.json   PWA manifest + shortcuts (Nav, Test)
+├── sw.js           service worker (cache-first app shell)
+├── make_icons.py   icon generator
+├── icon-192.png
+├── icon-512.png
+├── serve.sh        LAN host
+└── README.md</code></pre>
+<ul><li><strong>Manifest</strong> — <code>display: standalone</code>, dark theme, <code>shortcuts</code> to both apps.</li><li><strong>Service worker</strong> — on <code>install</code>, caches <code>./</code>, <code>index.html</code>, <code>test.html</code>, <code>manifest.json</code>, icons. On <code>fetch</code>, serves from cache first, else network, and caches new GETs; falls back to <code>index.html</code> offline. <strong>Bump <code>CACHE</code></strong> (e.g. <code>citinav-v3</code>) whenever the shell changes so clients update.</li><li><strong>Cross-links</strong> — each app links to the other; the manifest exposes both.</li></ul>
+<h3 id="4-2-hosting">4.2 Hosting</h3>
+<p><code>serve.sh</code> runs <code>python3 -m http.server &lt;port&gt; --bind 0.0.0.0</code> in <code>webapp/</code> and prints the Mac URL, the LAN URL, and the secure-context options. The phone loads the page through the tunnel; the Mac can use <code>http://localhost:&lt;port&gt;</code> directly.</p>
+<hr>
+<h2 id="5-nav-app-index-html">5. Nav app (<code>index.html</code>)</h2>
+<h3 id="5-1-data-flow">5.1 Data flow</h3>
+<pre class="md-code"><code class="lang-"> destination (search / pin)
+        │
+        ▼
+ ┌──────────────┐   POST /route    ┌───────────────────────────────┐
+ │  Valhalla    │◄────────────────►│ { shape (polyline), maneuvers }│
+ └──────────────┘                  └───────────────┬───────────────┘
+                                                   │ decodePolyline()
+                                                   ▼
+                                          routeShape[] (lat,lng)
+                                                   │
+ GPS watchPosition ──► nearestIndex() ──► nextManeuverIndex()
+        │                                          │
+        │                                          ▼
+        │                                   dirForType(type)
+        │                                          │
+        └──────────────► payload builder ──► BLE write ──► device</code></pre>
+<h3 id="5-2-routing-valhalla">5.2 Routing (Valhalla)</h3>
+<p><code>go()</code> posts to <code>https://valhalla1.openstreetmap.de/route</code>:</p>
+<pre class="md-code"><code class="lang-json">{
+  &quot;locations&quot;: [ {&quot;lat&quot;: &lt;me&gt;, &quot;lon&quot;: &lt;me&gt;}, {&quot;lat&quot;: &lt;dest&gt;, &quot;lon&quot;: &lt;dest&gt;} ],
+  &quot;costing&quot;: &quot;bicycle&quot;,                       // bicycle | pedestrian | auto
+  &quot;directions_options&quot;: { &quot;units&quot;: &quot;kilometers&quot; }
+}</code></pre>
+<p>Response used: <code>trip.legs[0].shape</code> (encoded polyline, precision <strong>6</strong>) and <code>trip.legs[0].maneuvers[]</code>. Each maneuver has <code>type</code>, <code>instruction</code>, <code>street_names[]</code>, <code>length</code> (km), <code>begin_shape_index</code>, <code>end_shape_index</code>.</p>
+<blockquote><p>The public OSRM demo ignores the profile (car-only), which is why Nav uses Valhalla for real bicycle/pedestrian routing. Both are CORS-enabled.</p></blockquote>
+<h3 id="5-3-polyline-decoding">5.3 Polyline decoding</h3>
+<p>Valhalla returns a Google-encoded polyline at <strong>1e6</strong> precision. <code>decodePolyline</code> walks the string, delta-decodes lat/lng, and returns <code>[[lat,lng], …]</code>. Verified against live data: first point snaps to the road near the origin, last point equals the destination.</p>
+<h3 id="5-4-maneuver-model-direction-mapping">5.4 Maneuver model &amp; direction mapping</h3>
+<p><code>dirForType(type)</code> maps Valhalla maneuver types to device directions:</p>
+<table><thead><tr><th>Device dir</th><th>Valhalla types</th></tr></thead><tbody><tr><td><code>A</code> arrive</td><td>4 destination, 5 dest-right, 6 dest-left</td></tr><tr><td><code>U</code> u-turn</td><td>12 u-turn-right, 13 u-turn-left</td></tr><tr><td><code>R</code> right</td><td>9 slight-right, 10 right, 11 sharp-right, 18 ramp-right, 20 exit-right, 23 stay-right, 37 merge-right</td></tr><tr><td><code>L</code> left</td><td>14 sharp-left, 15 left, 16 slight-left, 19 ramp-left, 21 exit-left, 24 stay-left, 38 merge-left</td></tr><tr><td><code>S</code> straight</td><td>everything else (start, continue, becomes, stay-straight, merge, roundabout, …)</td></tr></tbody></table>
+<h3 id="5-5-progress-tracking">5.5 Progress tracking</h3>
+<ul><li><code>nearestIndex(p)</code> — nearest route vertex to the current position. It starts scanning at <code>curIdx-5</code> (monotonic progress) and stops once the distance grows <code>&gt; bestD + 200 m</code> (moved past the nearest point). O(route length) worst case, cheap in practice.</li><li><code>nextManeuverIndex(idx)</code> — first maneuver whose <code>begin_shape_index &gt; idx</code> (i.e. the next turn ahead); falls back to the last maneuver (arrival).</li><li>Distance to the turn = <code>haversine(position, routeShape[begin_shape_index])</code>.</li></ul>
+<h3 id="5-6-command-emission-state-machine">5.6 Command-emission state machine</h3>
+<pre class="md-code"><code class="lang-">                 j changes (new upcoming turn)
+        ┌───────────────────────────────────────────┐
+        ▼                                           │
+   ANNOUNCE  ──write(dir:street:dist)──►  APPROACH   │
+        ▲                                   │        │
+        │ bucket changes (dist/50 m)        │ dist ≤ BLINK_M (30 m)
+        └───────────write(updated dist)─────┤        │
+                                            ▼        │
+                                          BLINK ─────┘
+                                     write(dirB:street:dist)
+        (turn passed → j advances → ANNOUNCE again)</code></pre>
+<p>Rules in <code>onPos()</code>:</p>
+<table><thead><tr><th>Condition</th><th>Action</th></tr></thead><tbody><tr><td><code>j</code> changed (new upcoming maneuver)</td><td>send <strong>static</strong> <code>dir:street:dist</code>; reset blink flag</td></tr><tr><td><code>floor(dist/50)</code> changed</td><td>re-send <strong>static</strong> with updated distance</td></tr><tr><td><code>dist ≤ 30 m</code> and not yet blinked for <code>j</code></td><td>send <strong>blink</strong> <code>dirB:street:dist</code></td></tr><tr><td><code>dir == A</code> and <code>dist ≤ 30 m</code></td><td>send <code>A</code> once</td></tr></tbody></table>
+<p><code>payload(blink)</code> builds the string:</p>
+<pre class="md-code"><code class="lang-js">dir + (blink &amp;&amp; dir in {L,R,S,U} ? &quot;B&quot; : &quot;&quot;)
+    + (street || dist != null ? &quot;:&quot; + street : &quot;&quot;)
+    + (dist != null ? &quot;:&quot; + dist : &quot;&quot;)</code></pre>
+<h3 id="5-7-pseudocode">5.7 Pseudocode</h3>
+<pre class="md-code"><code class="lang-">go():
+  require dest
+  ensure userLatLng (geolocate if needed)
+  route = POST Valhalla(me, dest, costing)
+  routeShape = decodePolyline(route.shape)
+  maneuvers  = route.maneuvers
+  draw polyline; fitBounds; follow = true
+  reset curIdx, lastAnnounced, lastBucket, blinkedFor
+  watchId = watchPosition(onPos, highAccuracy)
+
+onPos(pos):
+  update user marker (follow → recenter)
+  if not navigating: return
+  curIdx = nearestIndex(pos)
+  j = nextManeuverIndex(curIdx)
+  m = maneuvers[j]; dist = haversine(pos, shape[m.begin_shape_index])
+  dir = dirForType(m.type); street = m.street_names[0][:10]
+  update instruction card
+  if dir == A: if dist&lt;=30 and new: write(&quot;A&quot;); return
+  if j changed or bucket changed: write(static payload)
+  if dist&lt;=30 and not blinked: write(blink payload)
+
+stop(): clearWatch; optionally write(&quot;X&quot;)</code></pre>
+<h3 id="5-8-sequence-one-turn">5.8 Sequence (one turn)</h3>
+<pre class="md-code"><code class="lang-">GPS        Nav app                         Device
+ │ pos      │                               │
+ │─────────►│ nearestIndex / nextManeuver   │
+ │          │ dist=180m, j=3 (left)         │
+ │          │── write &quot;L:Broadway:180&quot; ────►│ shows TURN LEFT 180m
+ │ pos      │                               │
+ │─────────►│ bucket 3→2 (dist 140m)        │
+ │          │── write &quot;L:Broadway:140&quot; ────►│ updates distance
+ │ pos      │                               │
+ │─────────►│ dist=28m                      │
+ │          │── write &quot;LB:Broadway:28&quot; ────►│ blinks left
+ │ pos      │                               │
+ │─────────►│ j advances to 4 (right)       │
+ │          │── write &quot;R:5th Ave:220&quot; ─────►│ shows TURN RIGHT 220m</code></pre>
+<hr>
+<h2 id="6-test-app-test-html">6. Test app (<code>test.html</code>)</h2>
+<p>The earlier prototype, kept for the initial test flow.</p>
+<h3 id="6-1-map-destination">6.1 Map &amp; destination</h3>
+<ul><li><strong>Leaflet + OpenStreetMap</strong> tiles; a <strong>draggable marker</strong>; tap the map to move it. <code>setDest(lat,lng,name)</code> updates the label and reverse-geocodes if unnamed.</li><li><strong>Search</strong> — Photon (<code>photon.komoot.io/api</code>) with a 450 ms debounce; results are buttons that recenter the map and set the destination.</li><li><strong>Reverse geocode</strong> — Photon <code>/reverse</code> when the pin is dragged.</li><li><strong>Route preview</strong> — OSRM <code>/route/v1/driving/...</code> draws a green polyline and shows km/min (best-effort; car profile).</li></ul>
+<h3 id="6-2-google-maps-handoff">6.2 Google Maps handoff</h3>
+<p><code>startMaps()</code>:</p>
+<ol><li>Sends <code>S:&lt;destination&gt;</code> to the device (banner preview) if connected.</li><li>Opens <code>https://www.google.com/maps/dir/?api=1&amp;destination=&lt;lat&gt;,&lt;lng&gt;&amp;travelmode=&lt;mode&gt;&amp;dir_action=navigate</code> where <code>mode</code> ∈ <code>bicycling | walking | driving</code>.</li></ol>
+<blockquote><p>A web app <strong>cannot read Google Maps' navigation notifications</strong>, so it cannot auto-send turns from Maps. That requires the native Android app (<code>NotificationListenerService</code>). The Test app is a manual/handoff prototype.</p></blockquote>
+<h3 id="6-3-manual-controls">6.3 Manual controls</h3>
+<p><code>◀ ▲ ▶</code> → <code>L/S/R</code>; <code>↺ U-TURN / ⚑ ARRIVE / ✕ CLEAR</code> → <code>U/A/X</code>; <strong>Blink</strong> toggle; <strong>Street</strong> (≤10) + <strong>distance</strong>; live payload preview; <code>ack:</code> log; auto-reconnect with exponential backoff (1 s → 15 s).</p>
+<hr>
+<h2 id="7-firmware-citinavlandscape-py">7. Firmware (<code>citinav_landscape.py</code>)</h2>
+<h3 id="7-1-boot-sequence">7.1 Boot sequence</h3>
+<pre class="md-code"><code class="lang-">main()
+ ├─ lcd_setup()      SPI + ST7789, rotation=1 (landscape 320×172)
+ ├─ show_idle()      &quot;CitiNav&quot; in yellow on dark grey
+ ├─ ble_setup()      BLE active, GATT service, advertise()
+ └─ loop:
+      ├─ re-advertise if needed (deferred from IRQ)
+      ├─ pop command queue (respect HOLD_MS)
+      ├─ render screen + notify ack
+      └─ blink active arrow every BLINK_MS</code></pre>
+<h3 id="7-2-ble-setup-irq">7.2 BLE setup &amp; IRQ</h3>
+<ul><li><code>ble_setup()</code> registers the service/characteristics, writes <code>ready</code> to the ack characteristic, installs <code>irq</code>, and advertises.</li><li><code>irq()</code> handles three events:<ul><li><code>CENTRAL_CONNECT</code> → add to <code>connections</code>.</li><li><code>CENTRAL_DISCONNECT</code> → remove; <strong>set <code>need_advertise = True</code></strong> (do <em>not</em> call <code>advertise()</code> here — see §7.5).</li><li><code>GATTS_WRITE</code> → read the command characteristic, parse, enqueue.</li></ul></li></ul>
+<h3 id="7-3-command-parsing">7.3 Command parsing</h3>
+<pre class="md-code"><code class="lang-python">parts  = txt.split(&quot;:&quot;, 2)
+head   = parts[0].strip().upper()          # e.g. &quot;LB&quot;
+street = parts[1].strip() if len&gt;1 else None
+dist   = parts[2].strip() if len&gt;2 else None
+d      = head[:1]                          # &quot;L&quot;
+if d in (&quot;L&quot;,&quot;R&quot;,&quot;S&quot;,&quot;U&quot;,&quot;A&quot;,&quot;X&quot;):
+    blink = len(head) &gt; 1 and head[1] == &quot;B&quot;
+    cmd   = d + (&quot;B&quot; if blink else &quot;&quot;)
+    cmd_queue.append((cmd, street, dist, conn))</code></pre>
+<h3 id="7-4-main-loop-rendering">7.4 Main loop &amp; rendering</h3>
+<ul><li><strong>Queue</strong> — FIFO; a new command is shown only after <code>HOLD_MS</code> (300 ms) so bursts are not lost.</li><li><strong>Screens</strong>:<ul><li><code>show_dir</code> — banner + label + <strong>three-arrow row</strong> (<code>L · S · R</code>); the active arrow is green + boxed, the others dimmed.</li><li><code>show_uturn</code> — banner + label + U-turn glyph.</li><li><code>show_arrive</code> — banner + "ARRIVED".</li><li><code>show_idle</code> — <code>CitiNav</code> splash.</li></ul></li><li><strong>Blink</strong> — every <code>BLINK_MS</code> (300 ms) the active arrow toggles; the box stays.</li><li><strong>Ack</strong> — <code>ble.gatts_notify(conn, st_handle, b"ack:" + cmd)</code> (best-effort).</li></ul>
+<h3 id="7-5-re-advertise-fix-important">7.5 Re-advertise fix (important)</h3>
+<p>Calling <code>gap_advertise()</code> <strong>inside the BLE IRQ</strong> raised <code>OSError(-30)</code> and could wedge the stack. The fix:</p>
+<pre class="md-code"><code class="lang-">IRQ (disconnect):  need_advertise = True
+main loop:         if need_advertise and now &gt;= adv_retry_at:
+                       try: advertise(); need_advertise = False
+                       except: adv_retry_at = now + 500ms   # retry
+advertise():       gap_advertise(None)   # stop any stale advertising
+                   gap_advertise(100000, adv_data, resp_data)</code></pre>
+<h3 id="7-6-firmware-main-loop-flowchart">7.6 Firmware main-loop flowchart</h3>
+<pre class="md-code"><code class="lang-">        ┌──────────────────────────────┐
+        │ now = ticks_ms()             │
+        └──────────────┬───────────────┘
+                       ▼
+        ┌──────────────────────────────┐   no
+        │ need_advertise? ─────────────┼────────┐
+        └──────────────┬───────────────┘        │
+                       │ yes                    │
+                       ▼                        │
+        ┌──────────────────────────────┐        │
+        │ advertise() (retry on error) │        │
+        └──────────────┬───────────────┘        │
+                       ▼                        ▼
+        ┌──────────────────────────────┐
+        │ queue non-empty &amp; hold done? │
+        └──────────────┬───────────────┘
+             yes │            │ no
+                 ▼            │
+        ┌────────────────┐    │
+        │ pop, render,   │    │
+        │ notify ack     │    │
+        └───────┬────────┘    │
+                ▼             ▼
+        ┌──────────────────────────────┐
+        │ blink due? toggle active     │
+        └──────────────┬───────────────┘
+                       ▼
+        ┌──────────────────────────────┐
+        │ sleep 20 ms → loop           │
+        └──────────────────────────────┘</code></pre>
+<hr>
+<h2 id="8-end-to-end-sequence-nav-session">8. End-to-end sequence (Nav session)</h2>
+<pre class="md-code"><code class="lang-">User        Nav app                 Valhalla        Device
+ │ Connect    │                       │              │
+ │───────────►│── GATT connect ──────────────────────►│
+ │            │◄───────────────────── ack ready ──────│
+ │ pick dest  │                       │              │
+ │───────────►│                       │              │
+ │ Go         │── POST /route ───────►│              │
+ │───────────►│◄── shape+maneuvers ───│              │
+ │            │ decode, draw route    │              │
+ │            │── watchPosition ──┐   │              │
+ │            │◄── GPS updates ───┘   │              │
+ │            │ next turn → write ───────────────────►│ render
+ │            │◄──────────────────── ack:&lt;cmd&gt; ──────│
+ │            │ ... (distance updates, blink, arrive) │
+ │ Stop       │── write &quot;X&quot; ─────────────────────────►│ idle</code></pre>
+<hr>
+<h2 id="9-configuration-tuning">9. Configuration &amp; tuning</h2>
+<table><thead><tr><th>Constant</th><th>Where</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr><td><code>BLINK_M</code></td><td>nav</td><td>30 m</td><td>blink when this close to the turn</td></tr><tr><td><code>ARRIVE_M</code></td><td>nav</td><td>30 m</td><td>send <code>A</code> this close to the destination</td></tr><tr><td><code>BUCKET_M</code></td><td>nav</td><td>50 m</td><td>re-send distance every N metres</td></tr><tr><td><code>COSTING</code></td><td>nav</td><td>bicycle/pedestrian/auto</td><td>Valhalla profile per mode</td></tr><tr><td><code>BLINK_MS</code></td><td>firmware</td><td>300 ms</td><td>blink half-period</td></tr><tr><td><code>HOLD_MS</code></td><td>firmware</td><td>300 ms</td><td>min on-screen time per command</td></tr><tr><td><code>BANNER_H</code></td><td>firmware</td><td>38 px</td><td>top banner height</td></tr><tr><td><code>ARROW_X</code></td><td>firmware</td><td>53/160/267</td><td>centres of the 3 arrow cells</td></tr><tr><td><code>CACHE</code></td><td>sw.js</td><td><code>citinav-v3</code></td><td>bump to force PWA update</td></tr></tbody></table>
+<hr>
+<h2 id="10-failure-modes-troubleshooting">10. Failure modes &amp; troubleshooting</h2>
+<table><thead><tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr></thead><tbody><tr><td><code>Connect</code> fails / no device</td><td>not a secure context</td><td>use the https tunnel or <code>localhost</code></td></tr><tr><td>Device not found</td><td>already connected to another central (phone/Mac)</td><td>disconnect the other client</td></tr><tr><td>Device not advertising after a reset</td><td>ghost connection from soft reset</td><td>hard reset / power-cycle</td></tr><tr><td><code>ack</code> never arrives</td><td>old firmware (pre-v2)</td><td>deploy <code>citinav_landscape.py</code></td></tr><tr><td>Map blank</td><td>Leaflet CDN blocked / offline</td><td>check network; SW caches shell only</td></tr><tr><td>Search empty</td><td>Photon unreachable</td><td>retry; check network</td></tr><tr><td>Routing fails</td><td>Valhalla demo down / rate-limited</td><td>retry; consider a self-hosted Valhalla</td></tr><tr><td>Turns feel late/early</td><td>thresholds</td><td>tune <code>BLINK_M</code> / <code>BUCKET_M</code></td></tr><tr><td>Stale app after update</td><td>service worker cache</td><td>bump <code>CACHE</code> in <code>sw.js</code></td></tr></tbody></table>
+<hr>
+<h2 id="11-privacy-security">11. Privacy &amp; security</h2>
+<ul><li><strong>No backend.</strong> The apps are static files; routing/geocoding go directly from the phone to public services (Valhalla, Photon, OSM, Google).</li><li><strong>Location</strong> is used only in-browser for the nav loop; it is not stored or sent anywhere except as coordinates in the routing request.</li><li><strong>BLE</strong> is local and unauthenticated (prototype). Anyone in range could write commands; add pairing/bonding for production.</li><li><strong>Tunnel</strong> exposes the static page publicly while running; stop <code>cloudflared</code> when done. No secrets are served.</li><li><strong>Google Maps handoff</strong> opens a normal Maps URL; no data is read back.</li></ul>
+<hr>
+<h2 id="12-file-map">12. File map</h2>
+<table><thead><tr><th>Path</th><th>What</th></tr></thead><tbody><tr><td><code>webapp/index.html</code></td><td>Nav app (Valhalla + GPS + auto-send)</td></tr><tr><td><code>webapp/test.html</code></td><td>Test app (map handoff + manual controls)</td></tr><tr><td><code>webapp/manifest.json</code></td><td>PWA manifest + shortcuts</td></tr><tr><td><code>webapp/sw.js</code></td><td>Service worker (offline shell)</td></tr><tr><td><code>webapp/make_icons.py</code></td><td>Icon generator</td></tr><tr><td><code>webapp/serve.sh</code></td><td>LAN host</td></tr><tr><td><code>citinav_landscape.py</code></td><td>Device firmware (BLE + LCD)</td></tr><tr><td><code>citinav_send.py</code></td><td>Terminal sender (same contract)</td></tr><tr><td><code>deploy.sh</code></td><td>Deploy firmware + reboot</td></tr><tr><td><code>docs/CITINAV.md</code></td><td>Product plan + BLE contract</td></tr><tr><td><code>docs/CITINAV-MOBILEAPP-PLAN.md</code></td><td>Native Android plan</td></tr><tr><td><code>docs/GUI-DESIGN.md</code></td><td>On-device UI / RAM budget</td></tr></tbody></table>
+<hr>
+<h2 id="13-limitations-future-work">13. Limitations &amp; future work</h2>
+<ul><li><strong>Web Bluetooth is Android/desktop only</strong> — no iOS.</li><li><strong>Nav routing quality</strong> depends on the public Valhalla demo (no SLA, rate limits, no live traffic). A self-hosted Valhalla/OSRM would fix this.</li><li><strong>No off-route detection / reroute</strong> yet — the loop assumes you follow the route; add cross-track distance checks and a re-route trigger.</li><li><strong>Battery</strong> — continuous high-accuracy GPS + screen-on is heavy; consider <code>watchPosition</code> throttling and wake-lock management.</li><li><strong>No background operation</strong> — a browser tab must stay active; a native app is required for true background navigation.</li><li><strong>BLE security</strong> — add bonding/authentication for production.</li><li><strong>Test app</strong> cannot mirror Google Maps notifications (browser limitation); that remains the native-app path.</li></ul>
+    <h2 id="source-code">Source code</h2>
+    <p class="lead">Every project source file, embedded verbatim. (The vendored
+    font data modules <code>vga1_8x16.py</code> / <code>vga2_bold_16x32.py</code>
+    are omitted for size; they are unchanged third-party assets.)</p>
+    <div class="toolbar">
+      <button id="expandAll" type="button">Expand all</button>
+      <button id="collapseAll" type="button">Collapse all</button>
+    </div>
+    <details class="file" id="file-webapp-index-html"><summary><span class="fname">webapp/index.html</span><span class="fmeta">html · 19426 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-html">&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, viewport-fit=cover&quot;&gt;
+&lt;meta name=&quot;theme-color&quot; content=&quot;#202020&quot;&gt;
+&lt;meta name=&quot;mobile-web-app-capable&quot; content=&quot;yes&quot;&gt;
+&lt;meta name=&quot;apple-mobile-web-app-capable&quot; content=&quot;yes&quot;&gt;
+&lt;title&gt;CitiNav — Nav&lt;/title&gt;
+&lt;link rel=&quot;manifest&quot; href=&quot;manifest.json&quot;&gt;
+&lt;link rel=&quot;icon&quot; href=&quot;icon-192.png&quot;&gt;
+&lt;link rel=&quot;stylesheet&quot; href=&quot;https://unpkg.com/leaflet@1.9.4/dist/leaflet.css&quot;&gt;
+&lt;style&gt;
+  :root{
+    --bg:#202020; --bg2:#3a3a3a; --green:#00dc50; --dim:#1c4228;
+    --yellow:#ffd700; --text:#e8e8e8; --muted:#9a9a9a; --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg); color:var(--text);
+    font:16px/1.4 -apple-system,system-ui,Segoe UI,Roboto,sans-serif;
+    display:flex; justify-content:center; -webkit-tap-highlight-color:transparent;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+  main{width:100%; max-width:560px; padding:14px; display:flex; flex-direction:column; gap:12px}
+  header{display:flex; align-items:center; justify-content:space-between; gap:10px}
+  h1{font-size:22px; margin:0; color:var(--yellow); letter-spacing:.5px}
+  .status{font-size:13px; padding:6px 10px; border-radius:999px; background:var(--bg2); color:var(--muted); white-space:nowrap}
+  .status.on{background:var(--dim); color:var(--green)}
+  .status.err{background:#3a1c1c; color:var(--danger)}
+  .row{display:flex; gap:10px}
+  button{font:inherit; color:var(--text); background:var(--bg2); border:1px solid #4a4a4a;
+    border-radius:12px; padding:12px 14px; cursor:pointer; transition:transform .05s, background .15s;}
+  button:active{transform:scale(.97)}
+  button:disabled{opacity:.4; cursor:default}
+  button.primary{background:var(--green); color:#062b12; border-color:var(--green); font-weight:700}
+  button.danger{background:#3a1c1c; border-color:#7a2a2a; color:#ffb4b4}
+  button.grow{flex:1}
+  a.link{color:var(--yellow); text-decoration:none; font-size:14px}
+
+  /* instruction card */
+  .instr{display:flex; align-items:center; gap:16px; background:#262626; border:1px solid #3a3a3a;
+    border-radius:16px; padding:14px 18px; min-height:92px}
+  .iarrow{font-size:56px; line-height:1; color:var(--green); width:64px; text-align:center}
+  .itext{min-width:0}
+  .istreet{font-size:22px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .idist{font-size:15px; color:var(--muted)}
+  .idist b{color:var(--green)}
+
+  #map{height:40vh; min-height:220px; border-radius:14px; overflow:hidden; background:#2a2a2a; z-index:0}
+  .inlabel{display:block; font-size:13px; color:var(--muted); margin-bottom:6px}
+  input[type=text]{width:100%; font:inherit; color:var(--text); background:var(--bg2);
+    border:1px solid #4a4a4a; border-radius:10px; padding:11px 12px;}
+  .sugg{display:flex; flex-direction:column; gap:6px; margin-top:6px}
+  .sugg-item{text-align:left; padding:10px 12px; font-size:14px}
+  .seg{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px}
+  .seg label{display:flex; justify-content:center; gap:6px; padding:11px 6px; border:1px solid #4a4a4a;
+    border-radius:12px; background:var(--bg2); color:var(--text); cursor:pointer; font-size:14px; align-items:center}
+  .seg label:has(input:checked){background:var(--dim); border-color:var(--green); color:var(--green)}
+  .seg input{position:absolute; opacity:0; width:0}
+  .dest{font-size:14px; padding:11px 12px; border:1px solid #3a3a3a; border-radius:12px; background:#262626}
+  .dest b{color:var(--green)} .dest small{color:var(--muted); display:block; margin-top:2px}
+  .logwrap{display:flex; flex-direction:column; border:1px solid #3a3a3a; border-radius:12px; overflow:hidden}
+  .loghead{display:flex; justify-content:space-between; align-items:center; padding:8px 12px;
+    background:var(--bg2); font-size:13px; color:var(--muted)}
+  .loghead button{padding:4px 10px; font-size:12px; border-radius:8px}
+  #log{margin:0; padding:12px; height:120px; overflow:auto; font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+    white-space:pre-wrap; word-break:break-word}
+  .t{color:var(--muted)} .tx{color:var(--yellow)} .rx{color:var(--green)} .err{color:var(--danger)}
+  .leaflet-container{font:inherit}
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;main&gt;
+  &lt;header&gt;
+    &lt;h1&gt;CitiNav&lt;/h1&gt;
+    &lt;a class=&quot;link&quot; href=&quot;test.html&quot;&gt;🎮 Test&lt;/a&gt;
+    &lt;div id=&quot;status&quot; class=&quot;status&quot;&gt;disconnected&lt;/div&gt;
+  &lt;/header&gt;
+
+  &lt;div class=&quot;row&quot;&gt;
+    &lt;button id=&quot;connectBtn&quot; class=&quot;primary grow&quot;&gt;Connect device&lt;/button&gt;
+    &lt;button id=&quot;disconnectBtn&quot; class=&quot;grow&quot; disabled&gt;Disconnect&lt;/button&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;instr&quot;&gt;
+    &lt;div class=&quot;iarrow&quot; id=&quot;iArrow&quot;&gt;▲&lt;/div&gt;
+    &lt;div class=&quot;itext&quot;&gt;
+      &lt;div class=&quot;istreet&quot; id=&quot;iStreet&quot;&gt;Ready&lt;/div&gt;
+      &lt;div class=&quot;idist&quot; id=&quot;iDist&quot;&gt;Pick a destination, then Go.&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div id=&quot;map&quot;&gt;&lt;/div&gt;
+
+  &lt;div&gt;
+    &lt;label class=&quot;inlabel&quot;&gt;Destination&lt;/label&gt;
+    &lt;input id=&quot;search&quot; type=&quot;text&quot; placeholder=&quot;Search a place or address…&quot; autocomplete=&quot;off&quot;&gt;
+    &lt;div id=&quot;sugg&quot; class=&quot;sugg&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;seg&quot;&gt;
+    &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;mode&quot; value=&quot;bike&quot; checked&gt; 🚲 Bike&lt;/label&gt;
+    &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;mode&quot; value=&quot;walk&quot;&gt; 🚶 Walk&lt;/label&gt;
+    &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;mode&quot; value=&quot;drive&quot;&gt; 🚗 Drive&lt;/label&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;dest&quot;&gt;
+    &lt;b id=&quot;destLabel&quot;&gt;No destination yet&lt;/b&gt;
+    &lt;small id=&quot;routeInfo&quot;&gt;Tap the map or search to drop a pin.&lt;/small&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;row&quot;&gt;
+    &lt;button id=&quot;myLocBtn&quot; class=&quot;grow&quot;&gt;◎ My location&lt;/button&gt;
+    &lt;button id=&quot;goBtn&quot; class=&quot;primary grow&quot;&gt;▶ Go&lt;/button&gt;
+    &lt;button id=&quot;stopBtn&quot; class=&quot;danger grow&quot; disabled&gt;■ Stop&lt;/button&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;logwrap&quot;&gt;
+    &lt;div class=&quot;loghead&quot;&gt;&lt;span&gt;Log&lt;/span&gt;&lt;button id=&quot;clearBtn&quot;&gt;clear&lt;/button&gt;&lt;/div&gt;
+    &lt;pre id=&quot;log&quot;&gt;&lt;/pre&gt;
+  &lt;/div&gt;
+&lt;/main&gt;
+
+&lt;script src=&quot;https://unpkg.com/leaflet@1.9.4/dist/leaflet.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+&quot;use strict&quot;;
+
+// ============ BLE contract (matches citinav_landscape.py) ============
+const SERVICE = &quot;6e400001-b5a3-f393-e0a9-e50e24dcca9e&quot;;
+const CMD     = &quot;6e400002-b5a3-f393-e0a9-e50e24dcca9e&quot;;
+const ACK     = &quot;6e400003-b5a3-f393-e0a9-e50e24dcca9e&quot;;
+const BLINKABLE = [&quot;L&quot;, &quot;R&quot;, &quot;S&quot;, &quot;U&quot;];
+
+// ============ nav tuning ============
+const VALHALLA  = &quot;https://valhalla1.openstreetmap.de/route&quot;;
+const COSTING   = { bike: &quot;bicycle&quot;, walk: &quot;pedestrian&quot;, drive: &quot;auto&quot; };
+const BLINK_M   = 30;      // blink when this close to the turn
+const ARRIVE_M  = 30;      // send ARRIVE this close to the destination
+const BUCKET_M  = 50;      // re-send distance every this many metres
+
+const $ = (id) =&gt; document.getElementById(id);
+const statusEl = $(&quot;status&quot;), logEl = $(&quot;log&quot;);
+const connectBtn = $(&quot;connectBtn&quot;), disconnectBtn = $(&quot;disconnectBtn&quot;);
+const goBtn = $(&quot;goBtn&quot;), stopBtn = $(&quot;stopBtn&quot;);
+
+// ============ log / status ============
+function log(msg, cls) {
+  const ts = new Date().toTimeString().slice(0, 8);
+  const s = document.createElement(&quot;span&quot;);
+  s.className = cls || &quot;&quot;; s.textContent = `[${ts}] ${msg}\n`;
+  logEl.appendChild(s); logEl.scrollTop = logEl.scrollHeight;
+}
+function setStatus(t, c) { statusEl.textContent = t; statusEl.className = &quot;status&quot; + (c ? &quot; &quot; + c : &quot;&quot;); }
+$(&quot;clearBtn&quot;).addEventListener(&quot;click&quot;, () =&gt; (logEl.textContent = &quot;&quot;));
+
+// ============ BLE ============
+let device = null, cmdChar = null, ackChar = null;
+let wantConnected = false, reconnectDelay = 1000, reconnectTimer = null;
+
+async function connect() {
+  if (!navigator.bluetooth) { log(&quot;Web Bluetooth unsupported. Use Chrome on Android/desktop.&quot;, &quot;err&quot;); setStatus(&quot;unsupported&quot;, &quot;err&quot;); return; }
+  try {
+    log(&quot;requesting device (CitiNav)…&quot;);
+    device = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: &quot;CitiNav&quot; }], optionalServices: [SERVICE] });
+    device.addEventListener(&quot;gattserverdisconnected&quot;, onDisconnect);
+    wantConnected = true; reconnectDelay = 1000; await openGatt();
+  } catch (e) { log(&quot;connect failed: &quot; + e.message, &quot;err&quot;); wantConnected = false; setStatus(&quot;disconnected&quot;); }
+}
+async function openGatt() {
+  try {
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE);
+    cmdChar = await service.getCharacteristic(CMD);
+    ackChar = await service.getCharacteristic(ACK);
+    await ackChar.startNotifications();
+    ackChar.addEventListener(&quot;characteristicvaluechanged&quot;, (e) =&gt; log(&quot;← ack: &quot; + new TextDecoder().decode(e.target.value), &quot;rx&quot;));
+    connectBtn.disabled = true; disconnectBtn.disabled = false; reconnectDelay = 1000;
+    setStatus(&quot;connected&quot;, &quot;on&quot;); log(&quot;connected ✔&quot;, &quot;rx&quot;);
+  } catch (e) { log(&quot;gatt failed: &quot; + e.message, &quot;err&quot;); maybeReconnect(); }
+}
+function maybeReconnect() {
+  if (!wantConnected || !device) return;
+  clearTimeout(reconnectTimer);
+  log(`reconnecting in ${reconnectDelay / 1000}s…`);
+  reconnectTimer = setTimeout(() =&gt; { reconnectDelay = Math.min(reconnectDelay * 2, 15000); openGatt(); }, reconnectDelay);
+}
+function onDisconnect() {
+  cmdChar = ackChar = null; connectBtn.disabled = false; disconnectBtn.disabled = true;
+  if (wantConnected) { log(&quot;disconnected — reconnecting&quot;, &quot;err&quot;); setStatus(&quot;reconnecting…&quot;, &quot;err&quot;); maybeReconnect(); }
+  else { log(&quot;disconnected&quot;); setStatus(&quot;disconnected&quot;); }
+}
+function disconnect() {
+  wantConnected = false; clearTimeout(reconnectTimer);
+  if (device &amp;&amp; device.gatt.connected) device.gatt.disconnect(); else onDisconnect();
+}
+async function write(cmd) {
+  if (!cmdChar) { log(&quot;(no device) would send &quot; + cmd, &quot;t&quot;); return false; }
+  try {
+    const data = new TextEncoder().encode(cmd);
+    if (cmdChar.writeValueWithResponse) await cmdChar.writeValueWithResponse(data); else await cmdChar.writeValue(data);
+    log(&quot;→ &quot; + cmd, &quot;tx&quot;); if (navigator.vibrate) navigator.vibrate(10); return true;
+  } catch (e) { log(&quot;write failed: &quot; + e.message, &quot;err&quot;); return false; }
+}
+connectBtn.addEventListener(&quot;click&quot;, connect);
+disconnectBtn.addEventListener(&quot;click&quot;, disconnect);
+
+// ============ geo helpers ============
+function haversine(a, b) {
+  const R = 6371000, r = (x) =&gt; (x * Math.PI) / 180;
+  const dLat = r(b[0] - a[0]), dLon = r(b[1] - a[1]);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(r(a[0])) * Math.cos(r(b[0])) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+// Valhalla polyline, precision 6
+function decodePolyline(str, precision = 6) {
+  let i = 0, lat = 0, lng = 0; const out = []; const f = 10 ** precision;
+  while (i &lt; str.length) {
+    let b, shift = 0, result = 1;
+    do { b = str.charCodeAt(i++) - 63 - 1; result += b &lt;&lt; shift; shift += 5; } while (b &gt;= 0x1f);
+    lat += result &amp; 1 ? ~(result &gt;&gt; 1) : result &gt;&gt; 1;
+    shift = 0; result = 1;
+    do { b = str.charCodeAt(i++) - 63 - 1; result += b &lt;&lt; shift; shift += 5; } while (b &gt;= 0x1f);
+    lng += result &amp; 1 ? ~(result &gt;&gt; 1) : result &gt;&gt; 1;
+    out.push([lat / f, lng / f]);
+  }
+  return out;
+}
+function dirForType(t) {
+  if ([4, 5, 6].includes(t)) return &quot;A&quot;;                                   // destination
+  if ([12, 13].includes(t)) return &quot;U&quot;;                                    // u-turn
+  if ([9, 10, 11, 18, 20, 23, 37].includes(t)) return &quot;R&quot;;                 // right-ish
+  if ([14, 15, 16, 19, 21, 24, 38].includes(t)) return &quot;L&quot;;                // left-ish
+  return &quot;S&quot;;                                                              // straight / continue / roundabout
+}
+const GLYPH = { L: &quot;◀&quot;, R: &quot;▶&quot;, S: &quot;▲&quot;, U: &quot;↺&quot;, A: &quot;⚑&quot; };
+
+// ============ route ============
+let map = null, destMarker = null, routeLine = null, userMarker = null;
+let dest = null, userLatLng = null, follow = true;
+let routeShape = [], maneuvers = [], summary = null;
+
+function fmtPlace(p) {
+  if (!p) return &quot;&quot;;
+  const n = p.name || p.street || [p.housenumber, p.street].filter(Boolean).join(&quot; &quot;);
+  return [n, p.city || p.town || p.village, p.state, p.country].filter(Boolean).slice(0, 3).join(&quot;, &quot;);
+}
+function setDest(lat, lng, name) {
+  dest = { lat, lng, name: name || null };
+  destMarker.setLatLng([lat, lng]);
+  $(&quot;destLabel&quot;).textContent = name || lat.toFixed(5) + &quot;, &quot; + lng.toFixed(5);
+  $(&quot;routeInfo&quot;).textContent = &quot;Destination set — press Go&quot;;
+  if (!name) reverseGeocode(lat, lng);
+}
+async function reverseGeocode(lat, lng) {
+  try {
+    const j = await (await fetch(`https://photon.komoot.io/reverse?lon=${lng}&amp;lat=${lat}`)).json();
+    const f = j.features &amp;&amp; j.features[0];
+    if (f) { const n = fmtPlace(f.properties); if (n) { dest.name = n; $(&quot;destLabel&quot;).textContent = n; } }
+  } catch (e) {}
+}
+
+function initMap() {
+  if (!window.L) { log(&quot;map failed to load (offline?)&quot;, &quot;err&quot;); $(&quot;map&quot;).style.display = &quot;none&quot;; return; }
+  map = L.map(&quot;map&quot;, { zoomControl: true }).setView([40.73, -73.99], 13);
+  L.tileLayer(&quot;https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png&quot;, { maxZoom: 19, attribution: &quot;© OpenStreetMap&quot; }).addTo(map);
+  destMarker = L.marker([40.73, -73.99], { draggable: true }).addTo(map);
+  destMarker.on(&quot;dragend&quot;, () =&gt; { const ll = destMarker.getLatLng(); setDest(ll.lat, ll.lng); });
+  map.on(&quot;click&quot;, (e) =&gt; { destMarker.setLatLng(e.latlng); setDest(e.latlng.lat, e.latlng.lng); });
+  locateMe(true);
+}
+function locateMe(silent) {
+  if (!navigator.geolocation) { if (!silent) log(&quot;geolocation unavailable&quot;, &quot;err&quot;); return; }
+  navigator.geolocation.getCurrentPosition(
+    (p) =&gt; { userLatLng = [p.coords.latitude, p.coords.longitude]; updateUser(); if (!silent) log(&quot;located you&quot;, &quot;rx&quot;); },
+    (e) =&gt; { if (!silent) log(&quot;location denied: &quot; + e.message, &quot;err&quot;); },
+    { enableHighAccuracy: true, timeout: 8000 }
+  );
+}
+function updateUser() {
+  if (!userLatLng || !map) return;
+  if (!userMarker) userMarker = L.circleMarker(userLatLng, { radius: 7, color: &quot;#00dc50&quot;, fillColor: &quot;#00dc50&quot;, fillOpacity: 1 }).addTo(map);
+  else userMarker.setLatLng(userLatLng);
+  if (follow) map.setView(userLatLng, Math.max(map.getZoom(), 16));
+}
+$(&quot;myLocBtn&quot;).addEventListener(&quot;click&quot;, () =&gt; { follow = true; locateMe(false); });
+
+let searchTimer;
+$(&quot;search&quot;).addEventListener(&quot;input&quot;, () =&gt; {
+  clearTimeout(searchTimer);
+  const q = $(&quot;search&quot;).value.trim();
+  if (q.length &lt; 3) { $(&quot;sugg&quot;).innerHTML = &quot;&quot;; return; }
+  searchTimer = setTimeout(() =&gt; doSearch(q), 450);
+});
+async function doSearch(q) {
+  try {
+    const j = await (await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&amp;limit=6`)).json();
+    const box = $(&quot;sugg&quot;); box.innerHTML = &quot;&quot;;
+    (j.features || []).forEach((f) =&gt; {
+      const [lon, lat] = f.geometry.coordinates;
+      const name = fmtPlace(f.properties) || lat.toFixed(4) + &quot;, &quot; + lon.toFixed(4);
+      const b = document.createElement(&quot;button&quot;);
+      b.className = &quot;sugg-item&quot;; b.textContent = name;
+      b.onclick = () =&gt; { box.innerHTML = &quot;&quot;; $(&quot;search&quot;).value = name; map.setView([lat, lon], 15); setDest(lat, lon, name); };
+      box.appendChild(b);
+    });
+  } catch (e) { log(&quot;search failed: &quot; + e.message, &quot;err&quot;); }
+}
+
+function currentMode() { return document.querySelector(&#x27;input[name=&quot;mode&quot;]:checked&#x27;).value; }
+
+// ============ navigation loop ============
+let watchId = null, navigating = false;
+let curIdx = 0, lastAnnounced = -1, lastBucket = -1, blinkedFor = -1;
+
+async function go() {
+  if (!dest) { log(&quot;pick a destination first&quot;, &quot;err&quot;); return; }
+  if (!userLatLng || haversine(userLatLng, [dest.lat, dest.lng]) &lt; 15) {
+    log(&quot;waiting for your location…&quot;);
+    locateMe(false);
+    if (!userLatLng) return;
+  }
+  const costing = COSTING[currentMode()];
+  log(`routing (${costing})…`);
+  try {
+    const body = { locations: [{ lat: userLatLng[0], lon: userLatLng[1] }, { lat: dest.lat, lon: dest.lng }],
+      costing, directions_options: { units: &quot;kilometers&quot; } };
+    const j = await (await fetch(VALHALLA, { method: &quot;POST&quot;, headers: { &quot;Content-Type&quot;: &quot;application/json&quot; }, body: JSON.stringify(body) })).json();
+    if (!j.trip) throw new Error(j.error || &quot;no route&quot;);
+    const leg = j.trip.legs[0];
+    routeShape = decodePolyline(leg.shape);
+    maneuvers = leg.maneuvers;
+    summary = j.trip.summary;
+
+    if (routeLine) map.removeLayer(routeLine);
+    routeLine = L.polyline(routeShape, { color: &quot;#00dc50&quot;, weight: 5, opacity: 0.85 }).addTo(map);
+    map.fitBounds(routeLine.getBounds(), { padding: [30, 30] });
+    follow = true;
+
+    curIdx = 0; lastAnnounced = -1; lastBucket = -1; blinkedFor = -1;
+    navigating = true;
+    goBtn.disabled = true; stopBtn.disabled = false;
+    $(&quot;routeInfo&quot;).textContent = `${summary.length.toFixed(1)} km · ~${Math.round(summary.time / 60)} min`;
+    log(`route ok: ${summary.length.toFixed(1)} km, ${maneuvers.length} maneuvers`);
+
+    watchId = navigator.geolocation.watchPosition(onPos,
+      (e) =&gt; log(&quot;gps error: &quot; + e.message, &quot;err&quot;),
+      { enableHighAccuracy: true, maximumAge: 1000, timeout: 12000 });
+  } catch (e) { log(&quot;routing failed: &quot; + e.message, &quot;err&quot;); }
+}
+
+function stop(clearDevice) {
+  navigating = false;
+  if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  goBtn.disabled = false; stopBtn.disabled = true;
+  if (clearDevice) write(&quot;X&quot;);
+  log(&quot;navigation stopped&quot;);
+}
+goBtn.addEventListener(&quot;click&quot;, go);
+stopBtn.addEventListener(&quot;click&quot;, () =&gt; stop(true));
+
+let lastPos = null;
+function onPos(pos) {
+  const p = [pos.coords.latitude, pos.coords.longitude];
+  userLatLng = p; lastPos = p; updateUser();
+  if (!navigating || !routeShape.length) return;
+
+  curIdx = nearestIndex(p);
+  const j = nextManeuverIndex(curIdx);
+  if (j &lt; 0) return;
+  const m = maneuvers[j];
+  const at = routeShape[m.begin_shape_index] || p;
+  const dist = Math.round(haversine(p, at));
+  const dir = dirForType(m.type);
+  const street = ((m.street_names &amp;&amp; m.street_names[0]) || &quot;&quot;).replace(/[:]/g, &quot;&quot;).slice(0, 10);
+
+  // on-screen instruction (mirrors the device)
+  $(&quot;iArrow&quot;).textContent = GLYPH[dir] || &quot;▲&quot;;
+  $(&quot;iStreet&quot;).textContent = m.street_names &amp;&amp; m.street_names[0] ? m.street_names[0] : (dir === &quot;A&quot; ? &quot;Arrive&quot; : &quot;Continue&quot;);
+  $(&quot;iDist&quot;).innerHTML = `&lt;b&gt;${dist} m&lt;/b&gt; · ${dir === &quot;A&quot; ? &quot;arriving&quot; : &quot;to the turn&quot;}`;
+
+  const payload = (blink) =&gt; dir + (blink &amp;&amp; BLINKABLE.includes(dir) ? &quot;B&quot; : &quot;&quot;) +
+    (street || dist != null ? &quot;:&quot; + street : &quot;&quot;) + (dist != null ? &quot;:&quot; + dist : &quot;&quot;);
+
+  if (dir === &quot;A&quot;) {
+    if (dist &lt;= ARRIVE_M &amp;&amp; lastAnnounced !== j) { lastAnnounced = j; write(&quot;A&quot;); }
+    return;
+  }
+  // announce the upcoming turn (and refresh distance every BUCKET_M)
+  const bucket = Math.floor(dist / BUCKET_M);
+  if (j !== lastAnnounced || bucket !== lastBucket) {
+    if (j !== lastAnnounced) { lastAnnounced = j; blinkedFor = -1; }
+    lastBucket = bucket;
+    write(payload(false));
+  }
+  if (dist &lt;= BLINK_M &amp;&amp; blinkedFor !== j) { blinkedFor = j; write(payload(true)); }
+}
+function nearestIndex(p) {
+  let best = 0, bestD = Infinity;
+  const start = Math.max(0, curIdx - 5);
+  for (let i = start; i &lt; routeShape.length; i++) {
+    const d = haversine(p, routeShape[i]);
+    if (d &lt; bestD) { bestD = d; best = i; }
+    if (d &gt; bestD + 200) break;   // moved well past the nearest point
+  }
+  return best;
+}
+function nextManeuverIndex(idx) {
+  for (let i = 0; i &lt; maneuvers.length; i++) if (maneuvers[i].begin_shape_index &gt; idx) return i;
+  return maneuvers.length - 1;
+}
+
+// ============ boot ============
+initMap();
+setStatus(&quot;disconnected&quot;);
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre></div></details>
+<details class="file" id="file-webapp-test-html"><summary><span class="fname">webapp/test.html</span><span class="fmeta">html · 19630 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-html">&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, viewport-fit=cover&quot;&gt;
+&lt;meta name=&quot;theme-color&quot; content=&quot;#202020&quot;&gt;
+&lt;meta name=&quot;mobile-web-app-capable&quot; content=&quot;yes&quot;&gt;
+&lt;meta name=&quot;apple-mobile-web-app-capable&quot; content=&quot;yes&quot;&gt;
+&lt;title&gt;CitiNav&lt;/title&gt;
+&lt;link rel=&quot;manifest&quot; href=&quot;manifest.json&quot;&gt;
+&lt;link rel=&quot;icon&quot; href=&quot;icon-192.png&quot;&gt;
+&lt;link rel=&quot;stylesheet&quot; href=&quot;https://unpkg.com/leaflet@1.9.4/dist/leaflet.css&quot;&gt;
+&lt;style&gt;
+  :root{
+    --bg:#202020; --bg2:#3a3a3a; --green:#00dc50; --dim:#1c4228;
+    --yellow:#ffd700; --text:#e8e8e8; --muted:#9a9a9a; --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg); color:var(--text);
+    font:16px/1.4 -apple-system,system-ui,Segoe UI,Roboto,sans-serif;
+    display:flex; justify-content:center; -webkit-tap-highlight-color:transparent;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+  main{width:100%; max-width:560px; padding:14px; display:flex; flex-direction:column; gap:12px;
+    min-height:100%; padding-bottom:70px}
+  header{display:flex; align-items:center; justify-content:space-between; gap:10px}
+  h1{font-size:24px; margin:0; color:var(--yellow); letter-spacing:.5px}
+  .status{font-size:13px; padding:6px 10px; border-radius:999px; background:var(--bg2); color:var(--muted); white-space:nowrap}
+  .status.on{background:var(--dim); color:var(--green)}
+  .status.err{background:#3a1c1c; color:var(--danger)}
+  .row{display:flex; gap:10px}
+  button{font:inherit; color:var(--text); background:var(--bg2); border:1px solid #4a4a4a;
+    border-radius:12px; padding:12px 14px; cursor:pointer; transition:transform .05s, background .15s;}
+  button:active{transform:scale(.97)}
+  button:disabled{opacity:.4; cursor:default}
+  button.primary{background:var(--green); color:#062b12; border-color:var(--green); font-weight:700}
+  button.grow{flex:1}
+  .hidden{display:none !important}
+  .tab{display:flex; flex-direction:column; gap:12px}
+  .arrows{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
+  .arrow{display:flex; flex-direction:column; align-items:center; gap:4px; padding:22px 6px; font-size:36px; line-height:1}
+  .arrow span{font-size:11px; color:var(--muted); letter-spacing:.4px}
+  .arrow.active{background:var(--dim); border-color:var(--green); color:var(--green)}
+  .arrow.active span{color:var(--green)}
+  .secondary{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
+  .secondary button{padding:14px 6px; font-size:14px}
+  .fieldset{display:flex; gap:10px}
+  label{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted)}
+  input[type=text],input[type=number]{flex:1; min-width:0; font:inherit; color:var(--text);
+    background:var(--bg2); border:1px solid #4a4a4a; border-radius:10px; padding:11px 12px;}
+  input[type=checkbox]{width:20px; height:20px; accent-color:var(--green)}
+  input[type=radio]{accent-color:var(--green)}
+  .opts{display:flex; flex-wrap:wrap; gap:16px}
+  .opts label{color:var(--text)}
+  .preview{font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--muted)}
+  .preview b{color:var(--yellow); font-weight:600}
+  .logwrap{display:flex; flex-direction:column; border:1px solid #3a3a3a; border-radius:12px; overflow:hidden}
+  .loghead{display:flex; justify-content:space-between; align-items:center; padding:8px 12px;
+    background:var(--bg2); font-size:13px; color:var(--muted)}
+  .loghead button{padding:4px 10px; font-size:12px; border-radius:8px}
+  #log{margin:0; padding:12px; height:150px; overflow:auto; font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+    white-space:pre-wrap; word-break:break-word}
+  .t{color:var(--muted)} .tx{color:var(--yellow)} .rx{color:var(--green)} .err{color:var(--danger)}
+
+  /* route / map */
+  #map{height:44vh; min-height:240px; border-radius:12px; overflow:hidden; background:#2a2a2a; z-index:0}
+  .searchwrap{position:relative}
+  .sugg{display:flex; flex-direction:column; gap:6px; margin-top:6px}
+  .sugg-item{text-align:left; padding:10px 12px; font-size:14px}
+  .seg{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px}
+  .seg label{justify-content:center; gap:6px; padding:11px 6px; border:1px solid #4a4a4a; border-radius:12px;
+    background:var(--bg2); color:var(--text); cursor:pointer; font-size:14px}
+  .seg label:has(input:checked){background:var(--dim); border-color:var(--green); color:var(--green)}
+  .seg input{position:absolute; opacity:0; width:0}
+  .dest{font-size:14px; padding:11px 12px; border:1px solid #3a3a3a; border-radius:12px; background:#262626}
+  .dest b{color:var(--green)} .dest small{color:var(--muted); display:block; margin-top:2px}
+  .tabbar{position:fixed; left:0; right:0; bottom:0; display:flex; gap:8px; padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    background:var(--bg); border-top:1px solid #333; max-width:560px; margin:0 auto}
+  .tabbar button{flex:1}
+  .tabbar button.active{background:var(--dim); border-color:var(--green); color:var(--green)}
+  .leaflet-container{font:inherit}
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;main&gt;
+  &lt;header&gt;
+    &lt;h1&gt;CitiNav &lt;small style=&quot;font-size:12px;color:var(--muted);letter-spacing:0&quot;&gt;test&lt;/small&gt;&lt;/h1&gt;
+    &lt;a href=&quot;./&quot; style=&quot;color:var(--yellow);font-size:14px;text-decoration:none&quot;&gt;🧭 Web Nav →&lt;/a&gt;
+    &lt;div id=&quot;status&quot; class=&quot;status&quot;&gt;disconnected&lt;/div&gt;
+  &lt;/header&gt;
+
+  &lt;div class=&quot;row&quot;&gt;
+    &lt;button id=&quot;connectBtn&quot; class=&quot;primary grow&quot;&gt;Connect device&lt;/button&gt;
+    &lt;button id=&quot;disconnectBtn&quot; class=&quot;grow&quot; disabled&gt;Disconnect&lt;/button&gt;
+  &lt;/div&gt;
+
+  &lt;!-- ============ ROUTE TAB ============ --&gt;
+  &lt;section id=&quot;tab-route&quot; class=&quot;tab&quot;&gt;
+    &lt;div class=&quot;searchwrap&quot;&gt;
+      &lt;input id=&quot;search&quot; type=&quot;text&quot; placeholder=&quot;Search a destination…&quot; autocomplete=&quot;off&quot; style=&quot;width:100%&quot;&gt;
+    &lt;/div&gt;
+    &lt;div id=&quot;sugg&quot; class=&quot;sugg&quot;&gt;&lt;/div&gt;
+
+    &lt;div id=&quot;map&quot;&gt;&lt;/div&gt;
+
+    &lt;div class=&quot;row&quot;&gt;
+      &lt;button id=&quot;myLocBtn&quot; class=&quot;grow&quot;&gt;◎ My location&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;div class=&quot;seg&quot;&gt;
+      &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;mode&quot; value=&quot;bike&quot; checked&gt; 🚲 Bike&lt;/label&gt;
+      &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;mode&quot; value=&quot;walk&quot;&gt; 🚶 Walk&lt;/label&gt;
+      &lt;label&gt;&lt;input type=&quot;radio&quot; name=&quot;mode&quot; value=&quot;drive&quot;&gt; 🚗 Drive&lt;/label&gt;
+    &lt;/div&gt;
+
+    &lt;div class=&quot;dest&quot;&gt;
+      &lt;b id=&quot;destLabel&quot;&gt;No destination yet&lt;/b&gt;
+      &lt;small id=&quot;routeInfo&quot;&gt;Search or tap the map to drop a pin.&lt;/small&gt;
+    &lt;/div&gt;
+
+    &lt;button id=&quot;startBtn&quot; class=&quot;primary&quot;&gt;▶ Start in Google Maps&lt;/button&gt;
+  &lt;/section&gt;
+
+  &lt;!-- ============ CONTROL TAB ============ --&gt;
+  &lt;section id=&quot;tab-control&quot; class=&quot;tab hidden&quot;&gt;
+    &lt;div class=&quot;fieldset&quot;&gt;
+      &lt;label style=&quot;flex:2&quot;&gt;Street
+        &lt;input id=&quot;street&quot; type=&quot;text&quot; maxlength=&quot;10&quot; placeholder=&quot;Broadway&quot; autocomplete=&quot;off&quot;&gt;
+      &lt;/label&gt;
+      &lt;label style=&quot;flex:1&quot;&gt;Dist m
+        &lt;input id=&quot;dist&quot; type=&quot;number&quot; min=&quot;0&quot; max=&quot;9999&quot; inputmode=&quot;numeric&quot; placeholder=&quot;30&quot;&gt;
+      &lt;/label&gt;
+    &lt;/div&gt;
+
+    &lt;div class=&quot;arrows&quot;&gt;
+      &lt;button class=&quot;arrow&quot; data-dir=&quot;L&quot;&gt;◀&lt;span&gt;TURN LEFT&lt;/span&gt;&lt;/button&gt;
+      &lt;button class=&quot;arrow&quot; data-dir=&quot;S&quot;&gt;▲&lt;span&gt;STRAIGHT&lt;/span&gt;&lt;/button&gt;
+      &lt;button class=&quot;arrow&quot; data-dir=&quot;R&quot;&gt;▶&lt;span&gt;TURN RIGHT&lt;/span&gt;&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;div class=&quot;secondary&quot;&gt;
+      &lt;button data-dir=&quot;U&quot;&gt;↺ U-TURN&lt;/button&gt;
+      &lt;button data-dir=&quot;A&quot;&gt;⚑ ARRIVE&lt;/button&gt;
+      &lt;button data-dir=&quot;X&quot;&gt;✕ CLEAR&lt;/button&gt;
+    &lt;/div&gt;
+
+    &lt;div class=&quot;opts&quot;&gt;
+      &lt;label&gt;&lt;input type=&quot;checkbox&quot; id=&quot;blink&quot;&gt; Blink&lt;/label&gt;
+      &lt;label&gt;&lt;input type=&quot;checkbox&quot; id=&quot;auto&quot;&gt; Auto-reconnect&lt;/label&gt;
+      &lt;span class=&quot;preview&quot; style=&quot;margin-left:auto&quot;&gt;payload: &lt;b id=&quot;preview&quot;&gt;—&lt;/b&gt;&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/section&gt;
+
+  &lt;!-- shared log --&gt;
+  &lt;div class=&quot;logwrap&quot;&gt;
+    &lt;div class=&quot;loghead&quot;&gt;&lt;span&gt;Log&lt;/span&gt;&lt;button id=&quot;clearBtn&quot;&gt;clear&lt;/button&gt;&lt;/div&gt;
+    &lt;pre id=&quot;log&quot;&gt;&lt;/pre&gt;
+  &lt;/div&gt;
+&lt;/main&gt;
+
+&lt;nav class=&quot;tabbar&quot;&gt;
+  &lt;button data-tab=&quot;route&quot; class=&quot;active&quot;&gt;🧭 Route&lt;/button&gt;
+  &lt;button data-tab=&quot;control&quot;&gt;🎮 Control&lt;/button&gt;
+&lt;/nav&gt;
+
+&lt;script src=&quot;https://unpkg.com/leaflet@1.9.4/dist/leaflet.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+&quot;use strict&quot;;
+
+// ================= BLE contract (matches citinav_landscape.py) =================
+const SERVICE = &quot;6e400001-b5a3-f393-e0a9-e50e24dcca9e&quot;;
+const CMD     = &quot;6e400002-b5a3-f393-e0a9-e50e24dcca9e&quot;;
+const ACK     = &quot;6e400003-b5a3-f393-e0a9-e50e24dcca9e&quot;;
+const BLINKABLE = [&quot;L&quot;, &quot;R&quot;, &quot;S&quot;, &quot;U&quot;];
+const GM_MODE = { bike: &quot;bicycling&quot;, walk: &quot;walking&quot;, drive: &quot;driving&quot; };
+
+const $ = (id) =&gt; document.getElementById(id);
+const statusEl = $(&quot;status&quot;), logEl = $(&quot;log&quot;), previewEl = $(&quot;preview&quot;);
+const connectBtn = $(&quot;connectBtn&quot;), disconnectBtn = $(&quot;disconnectBtn&quot;);
+const streetEl = $(&quot;street&quot;), distEl = $(&quot;dist&quot;), blinkEl = $(&quot;blink&quot;), autoEl = $(&quot;auto&quot;);
+
+let device = null, cmdChar = null, ackChar = null;
+let wantConnected = false, reconnectDelay = 1000, reconnectTimer = null;
+
+// ================= log / status =================
+function log(msg, cls) {
+  const ts = new Date().toTimeString().slice(0, 8);
+  const line = document.createElement(&quot;span&quot;);
+  line.className = cls || &quot;&quot;;
+  line.textContent = `[${ts}] ${msg}\n`;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function setStatus(text, cls) { statusEl.textContent = text; statusEl.className = &quot;status&quot; + (cls ? &quot; &quot; + cls : &quot;&quot;); }
+
+// ================= prefs =================
+function loadPrefs() {
+  try {
+    streetEl.value = localStorage.getItem(&quot;street&quot;) || &quot;&quot;;
+    distEl.value = localStorage.getItem(&quot;dist&quot;) || &quot;&quot;;
+    blinkEl.checked = localStorage.getItem(&quot;blink&quot;) === &quot;1&quot;;
+    autoEl.checked = localStorage.getItem(&quot;auto&quot;) !== &quot;0&quot;;
+  } catch (e) {}
+}
+function savePrefs() {
+  try {
+    localStorage.setItem(&quot;street&quot;, streetEl.value);
+    localStorage.setItem(&quot;dist&quot;, distEl.value);
+    localStorage.setItem(&quot;blink&quot;, blinkEl.checked ? &quot;1&quot; : &quot;0&quot;);
+    localStorage.setItem(&quot;auto&quot;, autoEl.checked ? &quot;1&quot; : &quot;0&quot;);
+  } catch (e) {}
+}
+
+// ================= payload =================
+function buildCmd(dir) {
+  let cmd = dir;
+  if (BLINKABLE.includes(dir) &amp;&amp; blinkEl.checked) cmd += &quot;B&quot;;
+  const street = streetEl.value.trim(), dist = distEl.value.trim();
+  if (street || dist) { cmd += &quot;:&quot; + street.slice(0, 10); if (dist) cmd += &quot;:&quot; + dist; }
+  return cmd;
+}
+function refreshPreview() { previewEl.textContent = buildCmd(&quot;R&quot;); }
+
+// ================= tabs =================
+function showTab(name) {
+  document.querySelectorAll(&quot;.tab&quot;).forEach((s) =&gt; s.classList.toggle(&quot;hidden&quot;, s.id !== &quot;tab-&quot; + name));
+  document.querySelectorAll(&quot;.tabbar button&quot;).forEach((b) =&gt; b.classList.toggle(&quot;active&quot;, b.dataset.tab === name));
+  if (name === &quot;route&quot; &amp;&amp; map) setTimeout(() =&gt; map.invalidateSize(), 60);
+}
+document.querySelectorAll(&quot;.tabbar button&quot;).forEach((b) =&gt; b.addEventListener(&quot;click&quot;, () =&gt; showTab(b.dataset.tab)));
+
+// ================= BLE =================
+async function connect() {
+  if (!navigator.bluetooth) { log(&quot;Web Bluetooth unsupported. Use Chrome on Android/desktop.&quot;, &quot;err&quot;); setStatus(&quot;unsupported&quot;, &quot;err&quot;); return; }
+  try {
+    log(&quot;requesting device (CitiNav)…&quot;);
+    device = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: &quot;CitiNav&quot; }], optionalServices: [SERVICE] });
+    device.addEventListener(&quot;gattserverdisconnected&quot;, onDisconnect);
+    wantConnected = true; reconnectDelay = 1000;
+    await openGatt();
+  } catch (e) { log(&quot;connect failed: &quot; + e.message, &quot;err&quot;); wantConnected = false; setStatus(&quot;disconnected&quot;); }
+}
+async function openGatt() {
+  try {
+    log(&quot;connecting to &quot; + (device.name || device.id) + &quot; …&quot;);
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE);
+    cmdChar = await service.getCharacteristic(CMD);
+    ackChar = await service.getCharacteristic(ACK);
+    await ackChar.startNotifications();
+    ackChar.addEventListener(&quot;characteristicvaluechanged&quot;, (e) =&gt; log(&quot;← ack: &quot; + new TextDecoder().decode(e.target.value), &quot;rx&quot;));
+    connectBtn.disabled = true; disconnectBtn.disabled = false; reconnectDelay = 1000;
+    setStatus(&quot;connected&quot;, &quot;on&quot;); log(&quot;connected ✔&quot;, &quot;rx&quot;);
+  } catch (e) { log(&quot;gatt failed: &quot; + e.message, &quot;err&quot;); maybeReconnect(); }
+}
+function maybeReconnect() {
+  if (!wantConnected || !autoEl.checked || !device) return;
+  clearTimeout(reconnectTimer);
+  log(`reconnecting in ${reconnectDelay / 1000}s…`);
+  reconnectTimer = setTimeout(() =&gt; { reconnectDelay = Math.min(reconnectDelay * 2, 15000); openGatt(); }, reconnectDelay);
+}
+function onDisconnect() {
+  cmdChar = ackChar = null;
+  connectBtn.disabled = false; disconnectBtn.disabled = true;
+  if (wantConnected) { log(&quot;disconnected — auto-reconnect on&quot;, &quot;err&quot;); setStatus(&quot;reconnecting…&quot;, &quot;err&quot;); maybeReconnect(); }
+  else { log(&quot;disconnected&quot;); setStatus(&quot;disconnected&quot;); }
+}
+function disconnect() {
+  wantConnected = false; clearTimeout(reconnectTimer);
+  if (device &amp;&amp; device.gatt.connected) device.gatt.disconnect(); else onDisconnect();
+}
+async function write(cmd) {
+  if (!cmdChar) { log(&quot;not connected — sending skipped (&quot; + cmd + &quot;)&quot;, &quot;err&quot;); return false; }
+  try {
+    const data = new TextEncoder().encode(cmd);
+    if (cmdChar.writeValueWithResponse) await cmdChar.writeValueWithResponse(data); else await cmdChar.writeValue(data);
+    log(&quot;→ &quot; + cmd, &quot;tx&quot;);
+    if (navigator.vibrate) navigator.vibrate(12);
+    return true;
+  } catch (e) { log(&quot;write failed: &quot; + e.message, &quot;err&quot;); return false; }
+}
+async function send(dir) { await write(buildCmd(dir)); }
+
+connectBtn.addEventListener(&quot;click&quot;, connect);
+disconnectBtn.addEventListener(&quot;click&quot;, disconnect);
+$(&quot;clearBtn&quot;).addEventListener(&quot;click&quot;, () =&gt; (logEl.textContent = &quot;&quot;));
+
+document.querySelectorAll(&quot;[data-dir]&quot;).forEach((btn) =&gt; {
+  btn.addEventListener(&quot;click&quot;, async () =&gt; {
+    document.querySelectorAll(&quot;.arrow&quot;).forEach((b) =&gt; b.classList.remove(&quot;active&quot;));
+    if (btn.classList.contains(&quot;arrow&quot;)) btn.classList.add(&quot;active&quot;);
+    await send(btn.dataset.dir);
+  });
+});
+[streetEl, distEl, blinkEl].forEach((el) =&gt; el.addEventListener(&quot;input&quot;, () =&gt; { savePrefs(); refreshPreview(); }));
+autoEl.addEventListener(&quot;change&quot;, savePrefs);
+
+document.addEventListener(&quot;keydown&quot;, (e) =&gt; {
+  if (document.activeElement &amp;&amp; [&quot;INPUT&quot;, &quot;TEXTAREA&quot;].includes(document.activeElement.tagName)) return;
+  if ($(&quot;tab-control&quot;).classList.contains(&quot;hidden&quot;)) return;
+  const keys = { ArrowLeft: &quot;L&quot;, ArrowUp: &quot;S&quot;, ArrowRight: &quot;R&quot;, u: &quot;U&quot;, a: &quot;A&quot;, x: &quot;X&quot; };
+  const dir = keys[e.key];
+  if (dir) { e.preventDefault(); const b = document.querySelector(`.arrow[data-dir=&quot;${dir}&quot;], .secondary [data-dir=&quot;${dir}&quot;]`); if (b) b.click(); }
+});
+
+// ================= MAP / ROUTE (v3) =================
+let map = null, marker = null, routeLine = null;
+let dest = null;              // {lat, lng, name}
+let userLatLng = null;
+
+const suggEl = $(&quot;sugg&quot;), searchEl = $(&quot;search&quot;);
+
+function fmtPlace(p) {
+  if (!p) return &quot;&quot;;
+  const name = p.name || p.street || [p.housenumber, p.street].filter(Boolean).join(&quot; &quot;);
+  return [name, p.city || p.town || p.village, p.state, p.country].filter(Boolean).slice(0, 3).join(&quot;, &quot;);
+}
+function setDest(lat, lng, name) {
+  dest = { lat, lng, name: name || null };
+  if (marker) marker.setLatLng([lat, lng]);
+  $(&quot;destLabel&quot;).textContent = name || (lat.toFixed(5) + &quot;, &quot; + lng.toFixed(5));
+  $(&quot;routeInfo&quot;).textContent = &quot;Destination set — pick a mode and start.&quot;;
+  if (!name) reverseGeocode(lat, lng);
+  else previewRoute();
+}
+async function reverseGeocode(lat, lng) {
+  try {
+    const j = await (await fetch(`https://photon.komoot.io/reverse?lon=${lng}&amp;lat=${lat}`)).json();
+    const f = j.features &amp;&amp; j.features[0];
+    if (f) { const n = fmtPlace(f.properties); if (n) { dest.name = n; $(&quot;destLabel&quot;).textContent = n; } }
+  } catch (e) { /* offline: keep coords */ }
+  previewRoute();
+}
+async function previewRoute() {
+  if (!dest || !userLatLng || !window.L) return;
+  try {
+    const [a, b] = [userLatLng, [dest.lat, dest.lng]];
+    const url = `https://router.project-osrm.org/route/v1/driving/${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&amp;geometries=geojson`;
+    const j = await (await fetch(url)).json();
+    const r = j.routes[0];
+    const coords = r.geometry.coordinates.map((c) =&gt; [c[1], c[0]]);
+    if (routeLine) map.removeLayer(routeLine);
+    routeLine = L.polyline(coords, { color: &quot;#00dc50&quot;, weight: 4, opacity: 0.85 }).addTo(map);
+    $(&quot;routeInfo&quot;).textContent = `${(r.distance / 1000).toFixed(1)} km · ~${Math.round(r.duration / 60)} min (driving preview)`;
+  } catch (e) { /* preview is best-effort */ }
+}
+
+function initMap() {
+  if (!window.L) { log(&quot;map failed to load (offline?)&quot;, &quot;err&quot;); $(&quot;map&quot;).style.display = &quot;none&quot;; return; }
+  map = L.map(&quot;map&quot;, { zoomControl: true }).setView([40.73, -73.99], 13);
+  L.tileLayer(&quot;https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png&quot;,
+    { maxZoom: 19, attribution: &quot;© OpenStreetMap&quot; }).addTo(map);
+  marker = L.marker([40.73, -73.99], { draggable: true }).addTo(map);
+  marker.on(&quot;dragend&quot;, () =&gt; { const ll = marker.getLatLng(); setDest(ll.lat, ll.lng); });
+  map.on(&quot;click&quot;, (e) =&gt; { marker.setLatLng(e.latlng); setDest(e.latlng.lat, e.latlng.lng); });
+  locateMe(true);
+}
+
+function locateMe(silent) {
+  if (!navigator.geolocation) { if (!silent) log(&quot;geolocation unavailable&quot;, &quot;err&quot;); return; }
+  navigator.geolocation.getCurrentPosition(
+    (p) =&gt; {
+      userLatLng = [p.coords.latitude, p.coords.longitude];
+      if (map) { map.setView(userLatLng, 15); marker.setLatLng(userLatLng); }
+      if (!silent) log(&quot;located you&quot;, &quot;rx&quot;);
+      previewRoute();
+    },
+    (e) =&gt; { if (!silent) log(&quot;location denied: &quot; + e.message, &quot;err&quot;); },
+    { enableHighAccuracy: true, timeout: 8000 }
+  );
+}
+$(&quot;myLocBtn&quot;).addEventListener(&quot;click&quot;, () =&gt; locateMe(false));
+
+let searchTimer;
+searchEl.addEventListener(&quot;input&quot;, () =&gt; {
+  clearTimeout(searchTimer);
+  const q = searchEl.value.trim();
+  if (q.length &lt; 3) { suggEl.innerHTML = &quot;&quot;; return; }
+  searchTimer = setTimeout(() =&gt; doSearch(q), 450);
+});
+async function doSearch(q) {
+  try {
+    const j = await (await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&amp;limit=6`)).json();
+    suggEl.innerHTML = &quot;&quot;;
+    (j.features || []).forEach((f) =&gt; {
+      const [lon, lat] = f.geometry.coordinates;
+      const name = fmtPlace(f.properties) || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+      const b = document.createElement(&quot;button&quot;);
+      b.className = &quot;sugg-item&quot;; b.textContent = name;
+      b.onclick = () =&gt; { suggEl.innerHTML = &quot;&quot;; searchEl.value = name; map.setView([lat, lon], 15); setDest(lat, lon, name); };
+      suggEl.appendChild(b);
+    });
+  } catch (e) { log(&quot;search failed: &quot; + e.message, &quot;err&quot;); }
+}
+
+function currentMode() { return document.querySelector(&#x27;input[name=&quot;mode&quot;]:checked&#x27;).value; }
+
+async function startMaps() {
+  if (!dest) { log(&quot;pick a destination first&quot;, &quot;err&quot;); return; }
+  // give the device an immediate banner (destination) while Maps opens
+  const name = (dest.name || &quot;DEST&quot;).split(&quot;,&quot;)[0].slice(0, 10);
+  await write(&quot;S:&quot; + name);
+  const mode = GM_MODE[currentMode()];
+  const url = `https://www.google.com/maps/dir/?api=1&amp;destination=${dest.lat},${dest.lng}` +
+              `&amp;travelmode=${mode}&amp;dir_action=navigate`;
+  log(&quot;opening Google Maps (&quot; + mode + &quot;)&quot;, &quot;tx&quot;);
+  window.open(url, &quot;_blank&quot;);
+}
+$(&quot;startBtn&quot;).addEventListener(&quot;click&quot;, startMaps);
+
+// ================= service worker =================
+if (&quot;serviceWorker&quot; in navigator) navigator.serviceWorker.register(&quot;sw.js&quot;).catch(() =&gt; {});
+
+// ================= boot =================
+loadPrefs();
+refreshPreview();
+setStatus(&quot;disconnected&quot;);
+showTab(&quot;route&quot;);
+initMap();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre></div></details>
+<details class="file" id="file-webapp-manifest-json"><summary><span class="fname">webapp/manifest.json</span><span class="fmeta">json · 614 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-json">{
+  &quot;name&quot;: &quot;CitiNav&quot;,
+  &quot;short_name&quot;: &quot;CitiNav&quot;,
+  &quot;description&quot;: &quot;BLE test client for the CitiNav device (Web Bluetooth)&quot;,
+  &quot;start_url&quot;: &quot;./&quot;,
+  &quot;scope&quot;: &quot;./&quot;,
+  &quot;display&quot;: &quot;standalone&quot;,
+  &quot;orientation&quot;: &quot;portrait&quot;,
+  &quot;background_color&quot;: &quot;#202020&quot;,
+  &quot;theme_color&quot;: &quot;#202020&quot;,
+  &quot;icons&quot;: [
+    { &quot;src&quot;: &quot;icon-192.png&quot;, &quot;sizes&quot;: &quot;192x192&quot;, &quot;type&quot;: &quot;image/png&quot;, &quot;purpose&quot;: &quot;any maskable&quot; },
+    { &quot;src&quot;: &quot;icon-512.png&quot;, &quot;sizes&quot;: &quot;512x512&quot;, &quot;type&quot;: &quot;image/png&quot;, &quot;purpose&quot;: &quot;any maskable&quot; }
+  ],
+  &quot;shortcuts&quot;: [
+    { &quot;name&quot;: &quot;Nav (map)&quot;, &quot;url&quot;: &quot;./&quot; },
+    { &quot;name&quot;: &quot;Test controls&quot;, &quot;url&quot;: &quot;./test.html&quot; }
+  ]
+}
+</code></pre></div></details>
+<details class="file" id="file-webapp-sw-js"><summary><span class="fname">webapp/sw.js</span><span class="fmeta">javascript · 1058 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-javascript">// CitiNav service worker — cache the app shell so it installs and loads offline.
+const CACHE = &quot;citinav-v3&quot;;
+const ASSETS = [
+  &quot;./&quot;,
+  &quot;./index.html&quot;,
+  &quot;./test.html&quot;,
+  &quot;./manifest.json&quot;,
+  &quot;./icon-192.png&quot;,
+  &quot;./icon-512.png&quot;,
+];
+
+self.addEventListener(&quot;install&quot;, (e) =&gt; {
+  e.waitUntil(
+    caches.open(CACHE).then((c) =&gt; c.addAll(ASSETS)).then(() =&gt; self.skipWaiting())
+  );
+});
+
+self.addEventListener(&quot;activate&quot;, (e) =&gt; {
+  e.waitUntil(
+    caches.keys()
+      .then((keys) =&gt; Promise.all(keys.filter((k) =&gt; k !== CACHE).map((k) =&gt; caches.delete(k))))
+      .then(() =&gt; self.clients.claim())
+  );
+});
+
+self.addEventListener(&quot;fetch&quot;, (e) =&gt; {
+  if (e.request.method !== &quot;GET&quot;) return;
+  e.respondWith(
+    caches.match(e.request).then((hit) =&gt; {
+      if (hit) return hit;
+      return fetch(e.request)
+        .then((resp) =&gt; {
+          const copy = resp.clone();
+          caches.open(CACHE).then((c) =&gt; c.put(e.request, copy)).catch(() =&gt; {});
+          return resp;
+        })
+        .catch(() =&gt; caches.match(&quot;./index.html&quot;));
+    })
+  );
+});
+</code></pre></div></details>
+<details class="file" id="file-webapp-makeicons-py"><summary><span class="fname">webapp/make_icons.py</span><span class="fmeta">python · 1714 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-python">#!/usr/bin/env python3
+&quot;&quot;&quot;Generate the CitiNav PWA icons (no dependencies — writes PNG directly).
+
+    python3 make_icons.py
+
+Draws a green arrow on the app&#x27;s dark-grey background at 192 and 512 px.
+&quot;&quot;&quot;
+import os
+import struct
+import zlib
+
+BG = (32, 32, 32)       # matches --bg
+GREEN = (0, 220, 80)    # matches --green
+
+
+def arrow_pixel(x, y, s):
+    &quot;&quot;&quot;Right-pointing arrow inside a 0..s box (with margin for maskable icons).&quot;&quot;&quot;
+    cy = s / 2.0
+    # shaft / bar
+    if 0.20 * s &lt;= x &lt;= 0.50 * s and 0.44 * s &lt;= y &lt;= 0.56 * s:
+        return True
+    # head triangle: base at x=0.50s spanning y 0.27..0.73, tip at (0.80s, 0.5s)
+    xb, xt = 0.50 * s, 0.80 * s
+    if xb &lt;= x &lt;= xt:
+        half = 0.23 * s * (xt - x) / (xt - xb)
+        if abs(y - cy) &lt;= half:
+            return True
+    return False
+
+
+def write_png(path, s):
+    raw = bytearray()
+    for y in range(s):
+        raw.append(0)                       # filter type 0 (None)
+        for x in range(s):
+            r, g, b = GREEN if arrow_pixel(x, y, s) else BG
+            raw += bytes((r, g, b))
+
+    def chunk(typ, data):
+        return (struct.pack(&quot;&gt;I&quot;, len(data)) + typ + data +
+                struct.pack(&quot;&gt;I&quot;, zlib.crc32(typ + data) &amp; 0xFFFFFFFF))
+
+    png = b&quot;\x89PNG\r\n\x1a\n&quot;
+    png += chunk(b&quot;IHDR&quot;, struct.pack(&quot;&gt;IIBBBBB&quot;, s, s, 8, 2, 0, 0, 0))
+    png += chunk(b&quot;IDAT&quot;, zlib.compress(bytes(raw), 9))
+    png += chunk(b&quot;IEND&quot;, b&quot;&quot;)
+    with open(path, &quot;wb&quot;) as f:
+        f.write(png)
+    print(&quot;wrote&quot;, path, &quot;(%dx%d, %d bytes)&quot; % (s, s, len(png)))
+
+
+if __name__ == &quot;__main__&quot;:
+    here = os.path.dirname(os.path.abspath(__file__))
+    for size in (192, 512):
+        write_png(os.path.join(here, &quot;icon-%d.png&quot; % size), size)
+</code></pre></div></details>
+<details class="file" id="file-webapp-serve-sh"><summary><span class="fname">webapp/serve.sh</span><span class="fmeta">bash · 1466 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-bash">#!/usr/bin/env bash
+# Serve the CitiNav web simulator on the LAN so you can open it from your phone.
+#
+#   ./serve.sh [port]        # default port 8000
+#
+# Web Bluetooth only runs in a SECURE context. http://localhost:PORT works on
+# the Mac, but on the phone you must add the LAN origin to Chrome&#x27;s allowlist
+# (option A) or use an https tunnel (option B). This script prints both.
+
+set -euo pipefail
+cd &quot;$(dirname &quot;$0&quot;)&quot;
+
+PORT=&quot;${1:-8000}&quot;
+IP=&quot;$(ipconfig getifaddr en0 2&gt;/dev/null || ipconfig getifaddr en1 2&gt;/dev/null || echo 127.0.0.1)&quot;
+
+cat &lt;&lt;EOF
+CitiNav web simulator
+=====================
+  On this Mac (secure, works immediately):
+      http://localhost:$PORT
+
+  On your phone (same Wi-Fi):
+      http://$IP:$PORT
+
+Web Bluetooth needs a secure context. On the phone use ONE of:
+
+  A) Allow this origin in Chrome (no internet, easiest)
+     1. open   chrome://flags/#unsafely-treat-insecure-origin-as-secure
+     2. add     http://$IP:$PORT
+     3. set it to Enabled, Relaunch Chrome, then open the URL above
+     (Chrome will warn the origin is treated as secure — that&#x27;s expected.)
+
+  B) https tunnel (robust; needs a tool)
+     cloudflared:  brew install cloudflared
+                   cloudflared tunnel --url http://localhost:$PORT
+     ngrok:        npx ngrok http $PORT
+     then open the printed https:// URL on the phone.
+
+Keep this terminal running. Mac IP can change when you rejoin Wi-Fi.
+EOF
+
+exec python3 -m http.server &quot;$PORT&quot; --bind 0.0.0.0
+</code></pre></div></details>
+<details class="file" id="file-citinavlandscape-py"><summary><span class="fname">citinav_landscape.py</span><span class="fmeta">python · 15384 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-python"># CitiNav - Stage 1b / UI v2 (LANDSCAPE, 3-arrow UI)
+#
+# v2: this file is the boot app (main.py imports it). Same BLE contract as
+#     citinav.py; only the on-screen layout differs (three horizontal arrows).
+#
+# Same BLE contract as citinav.py (Nordic UART UUIDs, same commands): only the
+# on-screen layout changes. The LCD is rotated to landscape (320x172) and shows
+# THREE arrows in a horizontal row - left | straight | right. The commanded
+# direction is drawn bright + boxed; the other two stay dimmed. Blinking still
+# blinks the commanded arrow.
+#
+#   L / R / S    -&gt; highlight that arrow (static)
+#   LB / RB / SB -&gt; highlight that arrow but BLINKING
+#   &lt;dir&gt;:&lt;street&gt; -&gt; also shows the street text in the top banner
+#
+#   Service : 6e400001-b5a3-f393-e0a9-e50e24dcca9e
+#   Command : 6e400002-b5a3-f393-e0a9-e50e24dcca9e   (WRITE / WRITE_NR)
+#   Ack     : 6e400003-b5a3-f393-e0a9-e50e24dcca9e   (READ / NOTIFY)
+
+import gc
+import math
+import time
+import machine
+import bluetooth
+from micropython import const
+from machine import Pin, SPI
+import st7789py as st7789
+import vga1_8x16 as font
+import vga2_bold_16x32 as bigfont
+
+# ---- onboard LCD wiring (Waveshare ESP32-C6-LCD-1.47) ----
+LCD_SCLK = 7
+LCD_MOSI = 6
+LCD_CS   = 14
+LCD_DC   = 15
+LCD_RST  = 21
+LCD_BL   = 22
+
+# rotation 1 == landscape (320x172); see docs/LCD-SETUP.md
+C6_172x320_ROTATIONS = (
+    (0x00, 172, 320, 34, 0, False),
+    (0x60, 320, 172,  0, 34, False),
+    (0xc0, 172, 320, 34, 0, False),
+    (0xa0, 320, 172,  0, 34, False),
+)
+
+# ---- landscape geometry (screen is 320 wide x 172 tall) ----
+W, H = 320, 172
+
+VERSION  = 2              # UI version (see docs/CITINAV.md)
+BLE_NAME = &quot;CitiNav&quot;
+BLINK_MS = 300            # blink half-period (ms)
+HOLD_MS  = 300            # minimum time each command stays on screen
+BANNER_H = 38             # top banner height (fits the 16x32 street font)
+ARROW_Y0 = BANNER_H       # arrows area top
+LABEL_Y  = H - 18         # bottom label baseline
+ARROW_H  = LABEL_Y - ARROW_Y0   # arrows area height
+ARROW_CY = ARROW_Y0 + ARROW_H // 2
+ARROW_X = (53, 160, 267)  # centres of the three horizontal cells
+CELL_HW = 50              # half-width of the active-cell box
+
+# ---- BLE constants ----
+_IRQ_CENTRAL_CONNECT    = const(1)
+_IRQ_CENTRAL_DISCONNECT = const(2)
+_IRQ_GATTS_WRITE        = const(3)
+
+_FLAG_READ              = const(0x0002)
+_FLAG_WRITE_NO_RESPONSE = const(0x0004)
+_FLAG_WRITE             = const(0x0008)
+_FLAG_NOTIFY            = const(0x0010)
+
+_UUID_SVC = bluetooth.UUID(&quot;6e400001-b5a3-f393-e0a9-e50e24dcca9e&quot;)
+_UUID_CMD = bluetooth.UUID(&quot;6e400002-b5a3-f393-e0a9-e50e24dcca9e&quot;)
+_UUID_ST  = bluetooth.UUID(&quot;6e400003-b5a3-f393-e0a9-e50e24dcca9e&quot;)
+
+_CHAR_CMD = (_UUID_CMD, _FLAG_READ | _FLAG_WRITE | _FLAG_WRITE_NO_RESPONSE)
+_CHAR_ST  = (_UUID_ST,  _FLAG_READ | _FLAG_NOTIFY)
+_SERVICE  = (_UUID_SVC, (_CHAR_CMD, _CHAR_ST))
+
+LABELS = {&quot;L&quot;: &quot;TURN LEFT&quot;, &quot;R&quot;: &quot;TURN RIGHT&quot;, &quot;S&quot;: &quot;GO STRAIGHT&quot;,
+          &quot;U&quot;: &quot;U-TURN&quot;, &quot;A&quot;: &quot;ARRIVED&quot;}
+
+# street names shown in the top banner; populated over BLE, not hardcoded here.
+STREETS = {}
+
+BG     = st7789.color565(32, 32, 32)     # dark-grey page background
+BANNER = st7789.color565(58, 58, 58)     # lighter grey top banner
+ARROW  = st7789.color565(0, 220, 80)     # green arrows
+DIM    = st7789.color565(28, 66, 40)     # inactive (dimmed) arrows
+COLORS = {&quot;L&quot;: ARROW, &quot;R&quot;: ARROW, &quot;S&quot;: ARROW, &quot;U&quot;: ARROW, &quot;A&quot;: ARROW}
+
+# ---- globals ----
+ble = None
+tft = None
+cmd_handle = None
+st_handle = None
+connections = set()
+cmd_queue = []
+cur_dir = None
+cur_blink = False
+cur_dist = None
+need_advertise = False      # set by the BLE IRQ, handled in the main loop
+adv_retry_at = 0
+
+
+# ================= drawing helpers =================
+
+def fill_triangle(p0, p1, p2, color):
+    &quot;&quot;&quot;Scanline-filled triangle.&quot;&quot;&quot;
+    edges = ((p0, p1), (p1, p2), (p2, p0))
+    ymin = min(p0[1], p1[1], p2[1])
+    ymax = max(p0[1], p1[1], p2[1])
+    for y in range(ymin, ymax + 1):
+        nodes = []
+        for (ax, ay), (bx, by) in edges:
+            if ay == by:
+                continue
+            if (ay &lt;= y &lt; by) or (by &lt;= y &lt; ay):
+                nodes.append(ax + (y - ay) * (bx - ax) / (by - ay))
+        if nodes:
+            xa = int(min(nodes))
+            xb = int(max(nodes))
+            if xb &gt;= xa:
+                tft.hline(xa, y, xb - xa + 1, color)
+
+
+def arrow(cmd, cx, cy, col, k=2):
+    &quot;&quot;&quot;Draw a single L/R/S arrow centred at (cx, cy).
+
+    k is the downscale divisor: k=2 draws the arrow at half the size used by
+    the portrait firmware, so three of them fit across the landscape screen.
+    &quot;&quot;&quot;
+    if cmd == &quot;S&quot;:                                   # straight / up
+        hw = 45 // k
+        shw = 18 // k
+        top = cy - 90 // k
+        neck = cy - 15 // k
+        bot = cy + 110 // k
+        tft.fill_rect(cx - shw, neck, shw * 2, bot - neck, col)
+        fill_triangle((cx, top), (cx - hw, neck), (cx + hw, neck), col)
+    elif cmd == &quot;L&quot;:                                 # left
+        w = 80 // k
+        h = 45 // k
+        sh = 18 // k
+        tft.fill_rect(cx - 20 // k, cy - sh, w, sh * 2, col)
+        fill_triangle((cx - w, cy), (cx - 15 // k, cy - h),
+                      (cx - 15 // k, cy + h), col)
+    elif cmd == &quot;R&quot;:                                 # right
+        w = 80 // k
+        h = 45 // k
+        sh = 18 // k
+        tft.fill_rect(cx - 60 // k, cy - sh, w, sh * 2, col)
+        fill_triangle((cx + w, cy), (cx + 15 // k, cy - h),
+                      (cx + 15 // k, cy + h), col)
+
+
+def arrow_uturn(cx, cy, col):
+    &quot;&quot;&quot;A left U-turn glyph centred at (cx, cy) — fits inside the arrow area.&quot;&quot;&quot;
+    w = 24
+    left = cx - 50
+    right = cx + 50 - w
+    top = cy - 56
+    bottom = cy + 22
+    tft.fill_rect(left, top, w, bottom - top, col)               # left upright
+    tft.fill_rect(right, top, w, bottom - top, col)              # right upright
+    tft.fill_rect(left, top, (right + w) - left, w, col)         # top bar
+    fill_triangle((left + w // 2, bottom + 30),
+                  (left - 15, bottom), (left + w + 15, bottom), col)
+
+
+def ring(cx, cy, r, t, color):
+    &quot;&quot;&quot;Draw a ring (wheel) of thickness t using horizontal spans.&quot;&quot;&quot;
+    for dy in range(-r, r + 1):
+        dx = int(math.sqrt(max(0, r * r - dy * dy)))
+        tft.hline(cx - dx, cy + dy, t, color)
+        tft.hline(cx + dx - t + 1, cy + dy, t, color)
+
+
+def draw_bicycle(cx, cy, color):
+    &quot;&quot;&quot;A simple side-view bicycle centred on the wheel-axle line.&quot;&quot;&quot;
+    r = 20
+    lw = (cx - 58, cy)          # rear wheel
+    fw = (cx + 58, cy)          # front wheel
+    bb = (cx - 6, cy + 6)       # bottom bracket
+    seat = (cx - 34, cy - 30)   # seat top
+    bar = (cx + 38, cy - 34)    # handlebar
+    ring(lw[0], lw[1], r, 3, color)
+    ring(fw[0], fw[1], r, 3, color)
+    # frame
+    tft.line(lw[0], lw[1], bb[0], bb[1], color)       # chainstay
+    tft.line(bb[0], bb[1], seat[0], seat[1], color)   # seat tube
+    tft.line(seat[0], seat[1], lw[0], lw[1], color)   # seat stay
+    tft.line(seat[0], seat[1], bar[0], bar[1], color) # top tube
+    tft.line(bb[0], bb[1], bar[0], bar[1], color)     # down tube
+    tft.line(bar[0], bar[1], fw[0], fw[1], color)     # fork
+    # seat + handlebar
+    tft.hline(seat[0] - 9, seat[1], 18, color)
+    tft.hline(bar[0] - 9, bar[1], 18, color)
+    # crank
+    ring(bb[0], bb[1], 5, 2, color)
+
+
+def draw_banner(blink, street):
+    &quot;&quot;&quot;Top banner with the large street name, horizontally centred.&quot;&quot;&quot;
+    tft.fill_rect(0, 0, W, BANNER_H, BANNER)
+    if street:
+        x = (W - len(street) * 16) // 2
+        if x &lt; 0:
+            x = 0
+        tft.text(bigfont, street, x, (BANNER_H - 32) // 2, st7789.WHITE, BANNER)
+    if blink:
+        tft.fill_rect(W - 10, 4, 6, 6, st7789.YELLOW)   # blink indicator
+
+
+def draw_arrows(active, visible):
+    &quot;&quot;&quot;Redraw the whole horizontal arrow row.
+
+    All three arrows are always shown; the commanded one is highlighted with
+    its colour plus a box, the others are dimmed. When blinking, `visible`
+    toggles whether the active arrow itself is painted (its box stays).
+    &quot;&quot;&quot;
+    tft.fill_rect(0, ARROW_Y0, W, ARROW_H, BG)
+    for cmd, cx in zip((&quot;L&quot;, &quot;S&quot;, &quot;R&quot;), ARROW_X):
+        if cmd == active:
+            tft.rect(cx - CELL_HW, ARROW_Y0 + 3, CELL_HW * 2, ARROW_H - 8,
+                     COLORS.get(cmd, st7789.WHITE))
+            if visible:
+                arrow(cmd, cx, ARROW_CY, COLORS.get(cmd, st7789.WHITE))
+        else:
+            arrow(cmd, cx, ARROW_CY, DIM)
+
+
+def draw_label(cmd, dist=None):
+    &quot;&quot;&quot;Draw the label (and distance) centred at the bottom (persistent).&quot;&quot;&quot;
+    tft.fill_rect(0, LABEL_Y - 2, W, 18, BG)
+    label = LABELS.get(cmd)
+    if label:
+        if dist:
+            label = &quot;%s  %sm&quot; % (label, dist)
+        x = (W - len(label) * 8) // 2
+        if x &lt; 0:
+            x = 0
+        tft.text(font, label, x, LABEL_Y, COLORS.get(cmd, st7789.WHITE), BG)
+
+
+def show_dir(cmd, blink):
+    tft.fill(BG)
+    draw_banner(blink, STREETS.get(cmd[:1], &quot;&quot;))
+    draw_label(cmd, cur_dist)
+    draw_arrows(cmd, True)
+
+
+def show_uturn(blink):
+    tft.fill(BG)
+    draw_banner(blink, STREETS.get(&quot;U&quot;, &quot;&quot;))
+    draw_label(&quot;U&quot;, cur_dist)
+    tft.fill_rect(0, ARROW_Y0, W, ARROW_H, BG)
+    arrow_uturn(W // 2, ARROW_CY, ARROW)
+
+
+def show_arrive():
+    tft.fill(BG)
+    draw_banner(False, STREETS.get(&quot;A&quot;, &quot;&quot;))
+    msg = &quot;ARRIVED&quot;
+    tft.text(bigfont, msg, (W - len(msg) * 16) // 2, ARROW_CY - 16, ARROW, BG)
+
+
+def show_idle():
+    &quot;&quot;&quot;Boot / waiting screen: &#x27;CitiNav&#x27; in yellow with a bicycle below.&quot;&quot;&quot;
+    tft.fill(BG)                                        # whole screen dark grey
+    title = &quot;CitiNav&quot;
+    tft.text(bigfont, title, (W - len(title) * 16) // 2, 24, st7789.YELLOW, BG)
+    draw_bicycle(W // 2, 116, ARROW)
+
+
+# ================= LCD =================
+
+def lcd_setup():
+    global tft
+    spi = SPI(1, baudrate=40_000_000, polarity=0, phase=0,
+              sck=Pin(LCD_SCLK), mosi=Pin(LCD_MOSI))
+    tft = st7789.ST7789(spi, 172, 320,
+                        reset=Pin(LCD_RST, Pin.OUT),
+                        dc=Pin(LCD_DC, Pin.OUT),
+                        cs=Pin(LCD_CS, Pin.OUT),
+                        backlight=Pin(LCD_BL, Pin.OUT),
+                        rotation=1,          # &lt;- landscape
+                        color_order=st7789.BGR,
+                        custom_rotations=C6_172x320_ROTATIONS)
+
+
+# ================= BLE =================
+
+def advertise():
+    adv = bytearray([0x02, 0x01, 0x06])
+    n = BLE_NAME.encode()
+    adv += bytes([len(n) + 1, 0x09]) + n            # name in adv
+    su = bytes(_UUID_SVC)
+    resp = bytes([len(su) + 1, 0x07]) + su          # service UUID in scan resp
+    try:
+        ble.gap_advertise(None)                     # stop any stale advertising
+    except Exception:
+        pass
+    ble.gap_advertise(100000, adv_data=adv, resp_data=resp)
+
+
+def irq(event, data):
+    if event == _IRQ_CENTRAL_CONNECT:
+        connections.add(data[0])
+        print(&quot;BLE: connected&quot;)
+    elif event == _IRQ_CENTRAL_DISCONNECT:
+        connections.discard(data[0])
+        print(&quot;BLE: disconnected -&gt; will re-advertise&quot;)
+        # Do NOT call advertise() from the IRQ: gap_advertise can raise
+        # OSError(-30) in interrupt context and wedge the stack. Defer it.
+        global need_advertise
+        need_advertise = True
+    elif event == _IRQ_GATTS_WRITE:
+        conn, attr = data
+        if attr == cmd_handle:
+            raw = ble.gatts_read(cmd_handle)
+            try:
+                txt = raw.decode().strip()
+            except Exception:
+                txt = &quot;&quot;
+            if txt:
+                parts = txt.split(&quot;:&quot;, 2)
+                head = parts[0].strip().upper()
+                street = parts[1].strip() if len(parts) &gt; 1 else None
+                dist = parts[2].strip() if len(parts) &gt; 2 else None
+                d = head[:1]
+                if d in (&quot;L&quot;, &quot;R&quot;, &quot;S&quot;, &quot;U&quot;, &quot;A&quot;, &quot;X&quot;):
+                    blink = len(head) &gt; 1 and head[1] == &quot;B&quot;
+                    cmd = d + (&quot;B&quot; if blink else &quot;&quot;)
+                    cmd_queue.append((cmd, street, dist, conn))
+                    print(&quot;BLE rx:&quot;, cmd, street or &quot;&quot;, dist or &quot;&quot;)
+                else:
+                    print(&quot;unknown cmd:&quot;, head)
+
+
+def ble_setup():
+    global ble, cmd_handle, st_handle
+    ble = bluetooth.BLE()
+    ble.active(True)
+    try:
+        ble.config(gap_name=BLE_NAME)
+    except Exception:
+        pass
+    try:
+        ble.config(mtu=247)
+    except Exception:
+        pass
+    ((cmd_handle, st_handle),) = ble.gatts_register_services((_SERVICE,))
+    ble.gatts_write(st_handle, b&quot;ready&quot;)
+    ble.irq(irq)
+    advertise()
+
+
+# ================= main =================
+
+def main():
+    global cur_dir, cur_blink, cur_dist, need_advertise, adv_retry_at
+    lcd_setup()
+    show_idle()
+    ble_setup()
+    print(&quot;CitiNav ready: ui=v%d name=%s svc=%s cmd=%s&quot;
+          % (VERSION, BLE_NAME, _UUID_SVC, _UUID_CMD))
+
+    visible = True
+    last_blink = time.ticks_ms()
+    next_cmd_at = 0
+
+    while True:
+        now = time.ticks_ms()
+
+        # (re)start advertising after a disconnect, retrying on failure
+        if need_advertise and time.ticks_diff(now, adv_retry_at) &gt;= 0:
+            try:
+                advertise()
+                need_advertise = False
+                print(&quot;advertising again&quot;)
+            except Exception as e:
+                print(&quot;advertise retry:&quot;, e)
+                adv_retry_at = time.ticks_add(now, 500)
+
+        # take the next queued command (respecting the on-screen hold time)
+        if cmd_queue and time.ticks_diff(now, next_cmd_at) &gt;= 0:
+            cmd, street, dist, conn = cmd_queue.pop(0)
+            d = cmd[:1]
+            if d in (&quot;L&quot;, &quot;R&quot;, &quot;S&quot;, &quot;U&quot;, &quot;A&quot;, &quot;X&quot;):
+                cur_dir = d
+                cur_blink = len(cmd) &gt; 1 and cmd[1] == &quot;B&quot;
+                cur_dist = dist
+                if street is not None:
+                    STREETS[d] = street[:10]
+                if d in (&quot;L&quot;, &quot;R&quot;, &quot;S&quot;):
+                    show_dir(cur_dir, cur_blink)
+                elif d == &quot;U&quot;:
+                    show_uturn(cur_blink)
+                elif d == &quot;A&quot;:
+                    show_arrive()
+                else:                                  # X -&gt; clear to idle
+                    show_idle()
+                visible = True
+                last_blink = now
+                next_cmd_at = time.ticks_add(now, HOLD_MS)
+                # ack back to the sender (best-effort)
+                try:
+                    if conn in connections:
+                        ble.gatts_notify(conn, st_handle,
+                                         b&quot;ack:&quot; + cmd.encode())
+                except Exception:
+                    pass
+                print(&quot;showing %s street=%r dist=%r blink=%s&quot;
+                      % (cur_dir, STREETS.get(d, &quot;&quot;), cur_dist, cur_blink))
+            else:
+                print(&quot;unknown cmd:&quot;, cmd)
+
+        # blink the active arrow (box stays put)
+        if cur_blink and cur_dir in (&quot;L&quot;, &quot;R&quot;, &quot;S&quot;, &quot;U&quot;):
+            if time.ticks_diff(now, last_blink) &gt;= BLINK_MS:
+                visible = not visible
+                last_blink = now
+                if cur_dir == &quot;U&quot;:
+                    tft.fill_rect(0, ARROW_Y0, W, ARROW_H, BG)
+                    if visible:
+                        arrow_uturn(W // 2, ARROW_CY, ARROW)
+                else:
+                    draw_arrows(cur_dir, visible)
+
+        time.sleep_ms(20)
+
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</code></pre></div></details>
+<details class="file" id="file-citinavsend-py"><summary><span class="fname">citinav_send.py</span><span class="fmeta">python · 3795 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-python">#!/Users/zakaria/.esptool-venv/bin/python
+&quot;&quot;&quot;CitiNav terminal sender - write arrows + street text to the ESP32 over BLE.
+
+Usage:
+    python citinav_send.py                           # interactive prompt
+    python citinav_send.py L R S                     # send listed commands, then exit
+    python citinav_send.py &quot;L:W 4th St&quot; &quot;R:Broadway&quot;  # arrows with street text
+
+Commands:  L R S        -&gt; static arrow (left / right / straight)
+           LB RB SB     -&gt; same arrow, blinking
+           L:Street name -&gt; arrow plus the street shown in the top banner
+           ;             -&gt; separates multiple commands in the prompt
+           Q             -&gt; quit
+
+Install:   pip install bleak
+macOS:     grant your terminal Bluetooth access in
+           System Settings &gt; Privacy &amp; Security &gt; Bluetooth
+&quot;&quot;&quot;
+
+import asyncio
+import sys
+import threading
+from bleak import BleakScanner, BleakClient
+
+NAME     = &quot;CitiNav&quot;
+CMD_UUID = &quot;6e400002-b5a3-f393-e0a9-e50e24dcca9e&quot;
+ACK_UUID = &quot;6e400003-b5a3-f393-e0a9-e50e24dcca9e&quot;
+
+HELP = &quot;L R S U = arrows  A arrive  X clear  LB RB SB UB = blink  L:Street  ; separates  Q=quit&quot;
+
+
+def on_ack(_sender, data):
+    try:
+        print(&quot;   ack:&quot;, data.decode())
+    except Exception:
+        print(&quot;   ack:&quot;, data)
+
+
+def valid_cmd(token):
+    &quot;&quot;&quot;True if token is a direction command, optionally with &#x27;:street&#x27;.&quot;&quot;&quot;
+    t = token.strip()
+    if not t:
+        return False
+    head = t.split(&quot;:&quot;, 1)[0].strip().upper()
+    return head in (&quot;L&quot;, &quot;R&quot;, &quot;S&quot;, &quot;U&quot;, &quot;A&quot;, &quot;X&quot;, &quot;LB&quot;, &quot;RB&quot;, &quot;SB&quot;, &quot;UB&quot;)
+
+
+async def send(client, token):
+    t = token.strip()
+    if not valid_cmd(t):
+        print(&quot;!  use one of:  L R S U A X   LB RB SB UB   or   L:Street name&quot;)
+        return
+    await client.write_gatt_char(CMD_UUID, t.encode(), response=True)
+    print(&quot;   sent&quot;, t)
+
+
+async def run(one_shot):
+    print(&quot;scanning for&quot;, NAME, &quot;...&quot;)
+    dev = await BleakScanner.find_device_by_name(NAME, timeout=20)
+    if dev is None:
+        print(&quot;!  %s not found - is the board powered and showing &#x27;CitiNav&#x27;?&quot; % NAME)
+        return
+
+    async with BleakClient(dev, timeout=20) as client:
+        print(&quot;connected:&quot;, dev.address)
+        try:
+            await client.start_notify(ACK_UUID, on_ack)
+        except Exception as e:
+            print(&quot;(ack notifications unavailable: %s)&quot; % e)
+
+        if one_shot:
+            for ch in one_shot:
+                await send(client, ch)
+        else:
+            print(HELP)
+            loop = asyncio.get_running_loop()
+            queue = asyncio.Queue()
+            # Read stdin on a daemon thread instead of run_in_executor(): on
+            # Python 3.14 the executor future is cancelled on Ctrl-C and dumps
+            # a CancelledError traceback (and a blocked input() can hang exit).
+            threading.Thread(target=_stdin_reader,
+                             args=(loop, queue), daemon=True).start()
+            while True:
+                line = await queue.get()
+                if line is None:                 # EOF (Ctrl-D)
+                    break
+                line = line.strip()
+                if not line:
+                    continue
+                if line.upper() == &quot;Q&quot;:
+                    break
+                for tok in line.split(&quot;;&quot;):
+                    await send(client, tok)
+
+        print(&quot;disconnecting&quot;)
+
+
+def _stdin_reader(loop, queue):
+    &quot;&quot;&quot;Feed stdin lines into an asyncio.Queue from a daemon thread.&quot;&quot;&quot;
+    while True:
+        try:
+            line = input(&quot;cmd&gt; &quot;)
+        except EOFError:
+            loop.call_soon_threadsafe(queue.put_nowait, None)
+            return
+        loop.call_soon_threadsafe(queue.put_nowait, line)
+
+
+def main():
+    try:
+        asyncio.run(run(sys.argv[1:]))
+    except KeyboardInterrupt:
+        print(&quot;\nbye&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</code></pre></div></details>
+<details class="file" id="file-citinav-py"><summary><span class="fname">citinav.py</span><span class="fmeta">python · 9507 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-python"># CitiNav - Stage 1 (BLE peripheral, no routing)
+# Phone writes direction commands to the command characteristic -&gt; arrow on LCD.
+#
+#   L / R / S    -&gt; static arrow  (left / right / straight)
+#   LB / RB / SB -&gt; SAME arrow but BLINKING
+#   &lt;dir&gt;:&lt;street&gt; -&gt; optional street text for the top banner
+#                     e.g. &quot;L:W 4th St&quot;, &quot;RB:West 4th St&quot;
+#
+# Uses the Nordic UART Service UUIDs from the CitiNav guide:
+#   Service : 6e400001-b5a3-f393-e0a9-e50e24dcca9e
+#   Command : 6e400002-b5a3-f393-e0a9-e50e24dcca9e   (WRITE / WRITE_NR)
+#   Ack     : 6e400003-b5a3-f393-e0a9-e50e24dcca9e   (READ / NOTIFY)
+
+import gc
+import time
+import machine
+import bluetooth
+from micropython import const
+from machine import Pin, SPI
+import st7789py as st7789
+import vga1_8x16 as font
+import vga2_bold_16x32 as bigfont
+
+# ---- onboard LCD wiring (Waveshare ESP32-C6-LCD-1.47) ----
+LCD_SCLK = 7
+LCD_MOSI = 6
+LCD_CS   = 14
+LCD_DC   = 15
+LCD_RST  = 21
+LCD_BL   = 22
+
+C6_172x320_ROTATIONS = (
+    (0x00, 172, 320, 34, 0, False),
+    (0x60, 320, 172,  0, 34, False),
+    (0xc0, 172, 320, 34, 0, False),
+    (0xa0, 320, 172,  0, 34, False),
+)
+
+BLE_NAME = &quot;CitiNav&quot;
+BLINK_MS = 300            # blink half-period (ms)
+HOLD_MS  = 300            # minimum time each command stays on screen
+BANNER_H = 40             # top banner height (fits the 16x32 street font)
+ARROW_Y0 = 42             # arrow area top (below banner)
+ARROW_H  = 248            # arrow area height
+LABEL_Y  = 294            # label baseline (near bottom, centred)
+
+# ---- BLE constants ----
+_IRQ_CENTRAL_CONNECT    = const(1)
+_IRQ_CENTRAL_DISCONNECT = const(2)
+_IRQ_GATTS_WRITE        = const(3)
+
+_FLAG_READ              = const(0x0002)
+_FLAG_WRITE_NO_RESPONSE = const(0x0004)
+_FLAG_WRITE             = const(0x0008)
+_FLAG_NOTIFY            = const(0x0010)
+
+_UUID_SVC = bluetooth.UUID(&quot;6e400001-b5a3-f393-e0a9-e50e24dcca9e&quot;)
+_UUID_CMD = bluetooth.UUID(&quot;6e400002-b5a3-f393-e0a9-e50e24dcca9e&quot;)
+_UUID_ST  = bluetooth.UUID(&quot;6e400003-b5a3-f393-e0a9-e50e24dcca9e&quot;)
+
+_CHAR_CMD = (_UUID_CMD, _FLAG_READ | _FLAG_WRITE | _FLAG_WRITE_NO_RESPONSE)
+_CHAR_ST  = (_UUID_ST,  _FLAG_READ | _FLAG_NOTIFY)
+_SERVICE  = (_UUID_SVC, (_CHAR_CMD, _CHAR_ST))
+
+LABELS = {&quot;L&quot;: &quot;TURN LEFT&quot;, &quot;R&quot;: &quot;TURN RIGHT&quot;, &quot;S&quot;: &quot;GO STRAIGHT&quot;}
+
+# street names shown in the top-middle banner.
+# Populated over BLE (e.g. &quot;L:W 4th St&quot;), not hardcoded here.
+STREETS = {}
+
+BG     = st7789.color565(6, 28, 78)     # deep-blue page background
+BANNER = st7789.color565(20, 70, 160)   # brighter blue top banner
+
+# ---- globals ----
+ble = None
+tft = None
+cmd_handle = None
+st_handle = None
+connections = set()
+cmd_queue = []
+cur_dir = None
+cur_blink = False
+
+
+# ================= drawing helpers =================
+
+def fill_triangle(p0, p1, p2, color):
+    &quot;&quot;&quot;Scanline-filled triangle.&quot;&quot;&quot;
+    edges = ((p0, p1), (p1, p2), (p2, p0))
+    ymin = min(p0[1], p1[1], p2[1])
+    ymax = max(p0[1], p1[1], p2[1])
+    for y in range(ymin, ymax + 1):
+        nodes = []
+        for (ax, ay), (bx, by) in edges:
+            if ay == by:
+                continue
+            if (ay &lt;= y &lt; by) or (by &lt;= y &lt; ay):
+                nodes.append(ax + (y - ay) * (bx - ax) / (by - ay))
+        if nodes:
+            xa = int(min(nodes))
+            xb = int(max(nodes))
+            if xb &gt;= xa:
+                tft.hline(xa, y, xb - xa + 1, color)
+
+
+def arrow(cmd):
+    cx, cy = 86, 150
+    col = {&quot;L&quot;: st7789.YELLOW, &quot;R&quot;: st7789.CYAN, &quot;S&quot;: st7789.GREEN}.get(cmd, st7789.WHITE)
+    if cmd == &quot;S&quot;:                                   # straight / up
+        tft.fill_rect(cx - 18, cy - 10, 36, 120, col)
+        fill_triangle((cx, cy - 90), (cx - 45, cy - 15), (cx + 45, cy - 15), col)
+    elif cmd == &quot;L&quot;:                                 # left
+        tft.fill_rect(cx - 20, cy - 18, 80, 36, col)
+        fill_triangle((cx - 80, cy), (cx - 15, cy - 45), (cx - 15, cy + 45), col)
+    elif cmd == &quot;R&quot;:                                 # right
+        tft.fill_rect(cx - 60, cy - 18, 80, 36, col)
+        fill_triangle((cx + 80, cy), (cx + 15, cy - 45), (cx + 15, cy + 45), col)
+
+
+def draw_banner(blink, street):
+    &quot;&quot;&quot;Top banner with the large street name, horizontally centred.&quot;&quot;&quot;
+    tft.fill_rect(0, 0, 172, BANNER_H, BANNER)
+    if street:
+        x = (172 - len(street) * 16) // 2
+        if x &lt; 0:
+            x = 0
+        tft.text(bigfont, street, x, (BANNER_H - 32) // 2, st7789.WHITE)
+    if blink:
+        tft.fill_rect(162, 4, 6, 6, st7789.YELLOW)      # blink indicator
+
+
+def draw_arrow(cmd, visible):
+    &quot;&quot;&quot;Clear just the arrow area and optionally redraw the arrow.
+    The banner/label sit outside this area, so they never blink.&quot;&quot;&quot;
+    tft.fill_rect(0, ARROW_Y0, 172, ARROW_H, BG)
+    if visible:
+        arrow(cmd)
+
+
+def draw_label(cmd):
+    &quot;&quot;&quot;Draw the label horizontally centred near the bottom (persistent).&quot;&quot;&quot;
+    tft.fill_rect(0, LABEL_Y - 2, 172, 18, BG)
+    label = LABELS.get(cmd)
+    if label:
+        x = (172 - len(label) * 8) // 2
+        if x &lt; 0:
+            x = 0
+        tft.text(font, label, x, LABEL_Y, st7789.WHITE)
+
+
+def show_dir(cmd, blink):
+    tft.fill(BG)
+    draw_banner(blink, STREETS.get(cmd[:1], &quot;&quot;))
+    draw_label(cmd)
+    draw_arrow(cmd, True)
+
+
+def show_idle():
+    tft.fill(BG)
+    tft.fill_rect(0, 0, 172, BANNER_H, BANNER)
+    tft.text(font, &quot;CitiNav&quot;, 6, (BANNER_H - 16) // 2, st7789.WHITE)
+    tft.text(font, &quot;Stage 1: BLE&quot;, 6, 50, st7789.GREEN)
+    tft.text(font, &quot;waiting for a&quot;, 6, 80, st7789.WHITE)
+    tft.text(font, &quot;command...&quot;, 6, 96, st7789.WHITE)
+    tft.text(font, &quot;L R S  = static&quot;, 6, 140, st7789.CYAN)
+    tft.text(font, &quot;LB RB SB = blink&quot;, 6, 160, st7789.YELLOW)
+    tft.text(font, BLE_NAME, 6, 200, st7789.WHITE)
+
+
+# ================= LCD =================
+
+def lcd_setup():
+    global tft
+    spi = SPI(1, baudrate=40_000_000, polarity=0, phase=0,
+              sck=Pin(LCD_SCLK), mosi=Pin(LCD_MOSI))
+    tft = st7789.ST7789(spi, 172, 320,
+                        reset=Pin(LCD_RST, Pin.OUT),
+                        dc=Pin(LCD_DC, Pin.OUT),
+                        cs=Pin(LCD_CS, Pin.OUT),
+                        backlight=Pin(LCD_BL, Pin.OUT),
+                        rotation=0,
+                        color_order=st7789.BGR,
+                        custom_rotations=C6_172x320_ROTATIONS)
+
+
+# ================= BLE =================
+
+def advertise():
+    adv = bytearray([0x02, 0x01, 0x06])
+    n = BLE_NAME.encode()
+    adv += bytes([len(n) + 1, 0x09]) + n            # name in adv
+    su = bytes(_UUID_SVC)
+    resp = bytes([len(su) + 1, 0x07]) + su          # service UUID in scan resp
+    ble.gap_advertise(100000, adv_data=adv, resp_data=resp)
+
+
+def irq(event, data):
+    if event == _IRQ_CENTRAL_CONNECT:
+        connections.add(data[0])
+        print(&quot;BLE: connected&quot;)
+    elif event == _IRQ_CENTRAL_DISCONNECT:
+        connections.discard(data[0])
+        print(&quot;BLE: disconnected -&gt; re-advertising&quot;)
+        advertise()
+    elif event == _IRQ_GATTS_WRITE:
+        conn, attr = data
+        if attr == cmd_handle:
+            raw = ble.gatts_read(cmd_handle)
+            try:
+                txt = raw.decode().strip()
+            except Exception:
+                txt = &quot;&quot;
+            if txt:
+                parts = txt.split(&quot;:&quot;, 1)
+                cmd = parts[0].strip().upper()
+                street = parts[1].strip() if len(parts) &gt; 1 else None
+                if cmd[:2] in (&quot;LB&quot;, &quot;RB&quot;, &quot;SB&quot;):
+                    cmd = cmd[:2]
+                else:
+                    cmd = cmd[:1]
+                if cmd[:1] in (&quot;L&quot;, &quot;R&quot;, &quot;S&quot;):
+                    cmd_queue.append((cmd, street))
+                    print(&quot;BLE rx:&quot;, cmd, street or &quot;&quot;)
+                else:
+                    print(&quot;unknown cmd:&quot;, cmd)
+
+
+def ble_setup():
+    global ble, cmd_handle, st_handle
+    ble = bluetooth.BLE()
+    ble.active(True)
+    try:
+        ble.config(gap_name=BLE_NAME)
+    except Exception:
+        pass
+    try:
+        ble.config(mtu=247)
+    except Exception:
+        pass
+    ((cmd_handle, st_handle),) = ble.gatts_register_services((_SERVICE,))
+    ble.gatts_write(st_handle, b&quot;ready&quot;)
+    ble.irq(irq)
+    advertise()
+
+
+# ================= main =================
+
+def main():
+    global cur_dir, cur_blink
+    lcd_setup()
+    show_idle()
+    ble_setup()
+    print(&quot;CitiNav ready: name=%s svc=%s cmd=%s&quot; % (BLE_NAME, _UUID_SVC, _UUID_CMD))
+
+    visible = True
+    last_blink = time.ticks_ms()
+    next_cmd_at = 0
+
+    while True:
+        now = time.ticks_ms()
+
+        # take the next queued command (respecting the on-screen hold time)
+        if cmd_queue and time.ticks_diff(now, next_cmd_at) &gt;= 0:
+            cmd, street = cmd_queue.pop(0)
+            d = cmd[:1]
+            if d in (&quot;L&quot;, &quot;R&quot;, &quot;S&quot;):
+                cur_dir = d
+                cur_blink = len(cmd) &gt; 1 and cmd[1] == &quot;B&quot;
+                if street is not None:
+                    STREETS[d] = street[:10]
+                show_dir(cur_dir, cur_blink)
+                visible = True
+                last_blink = now
+                next_cmd_at = time.ticks_add(now, HOLD_MS)
+                print(&quot;showing %s street=%r blink=%s&quot;
+                      % (cur_dir, STREETS.get(d, &quot;&quot;), cur_blink))
+            else:
+                print(&quot;unknown cmd:&quot;, cmd)
+
+        # blink the current arrow
+        if cur_blink and cur_dir:
+            if time.ticks_diff(now, last_blink) &gt;= BLINK_MS:
+                visible = not visible
+                last_blink = now
+                draw_arrow(cur_dir, visible)
+
+        time.sleep_ms(20)
+
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</code></pre></div></details>
+<details class="file" id="file-main-py"><summary><span class="fname">main.py</span><span class="fmeta">python · 124 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-python"># CitiNav launcher - runs the landscape (3-arrow) BLE peripheral on boot.
+import citinav_landscape
+citinav_landscape.main()
+</code></pre></div></details>
+<details class="file" id="file-deploy-sh"><summary><span class="fname">deploy.sh</span><span class="fmeta">bash · 1637 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-bash">#!/usr/bin/env bash
+# CitiNav deploy - copy firmware to the board and (re)start it.
+#
+# Usage:
+#   ./deploy.sh                              # auto-detect the USB serial port
+#   ./deploy.sh /dev/cu.usbmodem101          # explicit port
+#   PORT=/dev/cu.usbmodem101 ./deploy.sh     # via env var
+#
+# Copies main.py + citinav_landscape.py (+ citinav.py) to the board, then
+# soft-resets so the landscape (v2) UI boots immediately.
+#
+# Gotcha this script hides: mpremote needs &#x27;+&#x27; BETWEEN chained commands.
+# Without it, &#x27;cp&#x27; treats the next word (e.g. &#x27;reset&#x27;) as the copy destination.
+
+set -euo pipefail
+
+MPREMOTE=&quot;$HOME/.esptool-venv/bin/mpremote&quot;
+[ -x &quot;$MPREMOTE&quot; ] || MPREMOTE=&quot;mpremote&quot;
+
+cd &quot;$(dirname &quot;$0&quot;)&quot;
+
+# ---- pick the port ----
+PORT=&quot;${1:-${PORT:-}}&quot;
+if [ -z &quot;$PORT&quot; ]; then
+    PORT=&quot;$(&quot;$MPREMOTE&quot; devs 2&gt;/dev/null | awk &#x27;/usbmodem/ {print $1; exit}&#x27;)&quot;
+fi
+if [ -z &quot;$PORT&quot; ]; then
+    echo &quot;! no /dev/cu.usbmodem* port found.&quot;
+    echo &quot;  Plug the board in with a data-capable USB-C cable, then retry.&quot;
+    echo &quot;  ports currently seen:&quot;
+    &quot;$MPREMOTE&quot; devs 2&gt;/dev/null | sed &#x27;s/^/    /&#x27;
+    exit 1
+fi
+echo &quot;-&gt; port: $PORT&quot;
+
+FILES=(main.py citinav_landscape.py citinav.py)
+
+# ---- build the chained command: connect PORT cp f :f + cp f :f + ... + reset ----
+ARGS=(connect &quot;$PORT&quot;)
+for f in &quot;${FILES[@]}&quot;; do
+    [ -f &quot;$f&quot; ] || { echo &quot;! missing local file: $f&quot;; exit 1; }
+    ARGS+=(cp &quot;$f&quot; &quot;:$f&quot; +)
+done
+ARGS+=(reset)
+
+echo &quot;-&gt; deploying: ${FILES[*]}&quot;
+&quot;$MPREMOTE&quot; &quot;${ARGS[@]}&quot;
+
+echo &quot;-&gt; done. Board should now be running the landscape (v2) UI.&quot;
+echo &quot;   (if it just sits at the REPL instead, press Ctrl-D or the RST button)&quot;
+</code></pre></div></details>
+<details class="file" id="file-st7789py-py"><summary><span class="fname">st7789py.py</span><span class="fmeta">python · 31173 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-python">&quot;&quot;&quot;
+MIT License
+
+Copyright (c) 2020-2023 Russ Hughes
+
+Copyright (c) 2019 Ivan Belokobylskiy
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the &quot;Software&quot;), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+The driver is based on devbis&#x27; st7789py_mpy module from
+https://github.com/devbis/st7789py_mpy.
+
+This driver supports:
+
+- 320x240, 240x240, 135x240 and 128x128 pixel displays
+- Display rotation
+- RGB and BGR color orders
+- Hardware based scrolling
+- Drawing text using 8 and 16 bit wide bitmap fonts with heights that are
+  multiples of 8.  Included are 12 bitmap fonts derived from classic pc
+  BIOS text mode fonts.
+- Drawing text using converted TrueType fonts.
+- Drawing converted bitmaps
+- Named color constants
+
+  - BLACK
+  - BLUE
+  - RED
+  - GREEN
+  - CYAN
+  - MAGENTA
+  - YELLOW
+  - WHITE
+
+&quot;&quot;&quot;
+
+from math import sin, cos
+
+#
+# This allows sphinx to build the docs
+#
+
+try:
+    from time import sleep_ms
+except ImportError:
+    sleep_ms = lambda ms: None
+    uint = int
+    const = lambda x: x
+
+    class micropython:
+        @staticmethod
+        def viper(func):
+            return func
+
+        @staticmethod
+        def native(func):
+            return func
+
+
+#
+# If you don&#x27;t need to build the docs, you can remove all of the lines between
+# here and the comment above except for the &quot;from time import sleep_ms&quot; line.
+#
+
+import struct
+
+# ST7789 commands
+_ST7789_SWRESET = b&quot;\x01&quot;
+_ST7789_SLPIN = b&quot;\x10&quot;
+_ST7789_SLPOUT = b&quot;\x11&quot;
+_ST7789_NORON = b&quot;\x13&quot;
+_ST7789_INVOFF = b&quot;\x20&quot;
+_ST7789_INVON = b&quot;\x21&quot;
+_ST7789_DISPOFF = b&quot;\x28&quot;
+_ST7789_DISPON = b&quot;\x29&quot;
+_ST7789_CASET = b&quot;\x2a&quot;
+_ST7789_RASET = b&quot;\x2b&quot;
+_ST7789_RAMWR = b&quot;\x2c&quot;
+_ST7789_VSCRDEF = b&quot;\x33&quot;
+_ST7789_COLMOD = b&quot;\x3a&quot;
+_ST7789_MADCTL = b&quot;\x36&quot;
+_ST7789_VSCSAD = b&quot;\x37&quot;
+_ST7789_RAMCTL = b&quot;\xb0&quot;
+
+# MADCTL bits
+_ST7789_MADCTL_MY = const(0x80)
+_ST7789_MADCTL_MX = const(0x40)
+_ST7789_MADCTL_MV = const(0x20)
+_ST7789_MADCTL_ML = const(0x10)
+_ST7789_MADCTL_BGR = const(0x08)
+_ST7789_MADCTL_MH = const(0x04)
+_ST7789_MADCTL_RGB = const(0x00)
+
+RGB = 0x00
+BGR = 0x08
+
+# Color modes
+_COLOR_MODE_65K = const(0x50)
+_COLOR_MODE_262K = const(0x60)
+_COLOR_MODE_12BIT = const(0x03)
+_COLOR_MODE_16BIT = const(0x05)
+_COLOR_MODE_18BIT = const(0x06)
+_COLOR_MODE_16M = const(0x07)
+
+# Color definitions
+BLACK = const(0x0000)
+BLUE = const(0x001F)
+RED = const(0xF800)
+GREEN = const(0x07E0)
+CYAN = const(0x07FF)
+MAGENTA = const(0xF81F)
+YELLOW = const(0xFFE0)
+WHITE = const(0xFFFF)
+
+_ENCODE_PIXEL = const(&quot;&gt;H&quot;)
+_ENCODE_PIXEL_SWAPPED = const(&quot;&lt;H&quot;)
+_ENCODE_POS = const(&quot;&gt;HH&quot;)
+_ENCODE_POS_16 = const(&quot;&lt;HH&quot;)
+
+# must be at least 128 for 8 bit wide fonts
+# must be at least 256 for 16 bit wide fonts
+_BUFFER_SIZE = const(256)
+
+_BIT7 = const(0x80)
+_BIT6 = const(0x40)
+_BIT5 = const(0x20)
+_BIT4 = const(0x10)
+_BIT3 = const(0x08)
+_BIT2 = const(0x04)
+_BIT1 = const(0x02)
+_BIT0 = const(0x01)
+
+# fmt: off
+
+# Rotation tables
+#   (madctl, width, height, xstart, ystart, needs_swap)[rotation % 4]
+
+_DISPLAY_240x320 = (
+    (0x00, 240, 320, 0, 0, False),
+    (0x60, 320, 240, 0, 0, False),
+    (0xc0, 240, 320, 0, 0, False),
+    (0xa0, 320, 240, 0, 0, False))
+
+_DISPLAY_240x240 = (
+    (0x00, 240, 240,  0,  0, False),
+    (0x60, 240, 240,  0,  0, False),
+    (0xc0, 240, 240,  0, 80, False),
+    (0xa0, 240, 240, 80,  0, False))
+
+_DISPLAY_135x240 = (
+    (0x00, 135, 240, 52, 40, False),
+    (0x60, 240, 135, 40, 53, False),
+    (0xc0, 135, 240, 53, 40, False),
+    (0xa0, 240, 135, 40, 52, False))
+
+_DISPLAY_128x128 = (
+    (0x00, 128, 128, 2, 1, False),
+    (0x60, 128, 128, 1, 2, False),
+    (0xc0, 128, 128, 2, 1, False),
+    (0xa0, 128, 128, 1, 2, False))
+
+# index values into rotation table
+_WIDTH = const(0)
+_HEIGHT = const(1)
+_XSTART = const(2)
+_YSTART = const(3)
+_NEEDS_SWAP = const(4)
+
+# Supported displays (physical width, physical height, rotation table)
+_SUPPORTED_DISPLAYS = (
+    (240, 320, _DISPLAY_240x320),
+    (240, 240, _DISPLAY_240x240),
+    (135, 240, _DISPLAY_135x240),
+    (128, 128, _DISPLAY_128x128))
+
+# init tuple format (b&#x27;command&#x27;, b&#x27;data&#x27;, delay_ms)
+_ST7789_INIT_CMDS = (
+    ( b&#x27;\x11&#x27;, b&#x27;\x00&#x27;, 120),               # Exit sleep mode
+    ( b&#x27;\x13&#x27;, b&#x27;\x00&#x27;, 0),                 # Turn on the display
+    ( b&#x27;\xb6&#x27;, b&#x27;\x0a\x82&#x27;, 0),             # Set display function control
+    ( b&#x27;\x3a&#x27;, b&#x27;\x55&#x27;, 10),                # Set pixel format to 16 bits per pixel (RGB565)
+    ( b&#x27;\xb2&#x27;, b&#x27;\x0c\x0c\x00\x33\x33&#x27;, 0), # Set porch control
+    ( b&#x27;\xb7&#x27;, b&#x27;\x35&#x27;, 0),                 # Set gate control
+    ( b&#x27;\xbb&#x27;, b&#x27;\x28&#x27;, 0),                 # Set VCOMS setting
+    ( b&#x27;\xc0&#x27;, b&#x27;\x0c&#x27;, 0),                 # Set power control 1
+    ( b&#x27;\xc2&#x27;, b&#x27;\x01\xff&#x27;, 0),             # Set power control 2
+    ( b&#x27;\xc3&#x27;, b&#x27;\x10&#x27;, 0),                 # Set power control 3
+    ( b&#x27;\xc4&#x27;, b&#x27;\x20&#x27;, 0),                 # Set power control 4
+    ( b&#x27;\xc6&#x27;, b&#x27;\x0f&#x27;, 0),                 # Set VCOM control 1
+    ( b&#x27;\xd0&#x27;, b&#x27;\xa4\xa1&#x27;, 0),             # Set power control A
+                                            # Set gamma curve positive polarity
+    ( b&#x27;\xe0&#x27;, b&#x27;\xd0\x00\x02\x07\x0a\x28\x32\x44\x42\x06\x0e\x12\x14\x17&#x27;, 0),
+                                            # Set gamma curve negative polarity
+    ( b&#x27;\xe1&#x27;, b&#x27;\xd0\x00\x02\x07\x0a\x28\x31\x54\x47\x0e\x1c\x17\x1b\x1e&#x27;, 0),
+    ( b&#x27;\x21&#x27;, b&#x27;\x00&#x27;, 0),                 # Enable display inversion
+    ( b&#x27;\x29&#x27;, b&#x27;\x00&#x27;, 120)                # Turn on the display
+)
+
+# fmt: on
+
+
+def color565(red, green=0, blue=0):
+    &quot;&quot;&quot;
+    Convert red, green and blue values (0-255) into a 16-bit 565 encoding.
+    &quot;&quot;&quot;
+    if isinstance(red, (tuple, list)):
+        red, green, blue = red[:3]
+    return (red &amp; 0xF8) &lt;&lt; 8 | (green &amp; 0xFC) &lt;&lt; 3 | blue &gt;&gt; 3
+
+
+class ST7789:
+    &quot;&quot;&quot;
+    ST7789 driver class
+
+    Args:
+        spi (spi): spi object **Required**
+        width (int): display width **Required**
+        height (int): display height **Required**
+        reset (pin): reset pin
+        dc (pin): dc pin **Required**
+        cs (pin): cs pin
+        backlight(pin): backlight pin
+        rotation (int):
+
+          - 0-Portrait
+          - 1-Landscape
+          - 2-Inverted Portrait
+          - 3-Inverted Landscape
+
+        color_order (int):
+
+          - RGB: Red, Green Blue, default
+          - BGR: Blue, Green, Red
+
+        custom_init (tuple): custom initialization commands
+
+          - ((b&#x27;command&#x27;, b&#x27;data&#x27;, delay_ms), ...)
+
+        custom_rotations (tuple): custom rotation definitions
+
+          - ((width, height, xstart, ystart, madctl, needs_swap), ...)
+
+    &quot;&quot;&quot;
+
+    def __init__(
+        self,
+        spi,
+        width,
+        height,
+        reset=None,
+        dc=None,
+        cs=None,
+        backlight=None,
+        rotation=0,
+        color_order=BGR,
+        custom_init=None,
+        custom_rotations=None,
+    ):
+        &quot;&quot;&quot;
+        Initialize display.
+        &quot;&quot;&quot;
+        self.rotations = custom_rotations or self._find_rotations(width, height)
+        if not self.rotations:
+            supported_displays = &quot;, &quot;.join(
+                [f&quot;{display[0]}x{display[1]}&quot; for display in _SUPPORTED_DISPLAYS]
+            )
+            raise ValueError(
+                f&quot;Unsupported {width}x{height} display. Supported displays: {supported_displays}&quot;
+            )
+
+        if dc is None:
+            raise ValueError(&quot;dc pin is required.&quot;)
+
+        self.physical_width = self.width = width
+        self.physical_height = self.height = height
+        self.xstart = 0
+        self.ystart = 0
+        self.spi = spi
+        self.reset = reset
+        self.dc = dc
+        self.cs = cs
+        self.backlight = backlight
+        self._rotation = rotation % 4
+        self.color_order = color_order
+        self.init_cmds = custom_init or _ST7789_INIT_CMDS
+        self.hard_reset()
+        # yes, twice, once is not always enough
+        self.init(self.init_cmds)
+        self.init(self.init_cmds)
+        self.rotation(self._rotation)
+        self.needs_swap = False
+        self.fill(0x0)
+
+        if backlight is not None:
+            backlight.value(1)
+
+    @staticmethod
+    def _find_rotations(width, height):
+        for display in _SUPPORTED_DISPLAYS:
+            if display[0] == width and display[1] == height:
+                return display[2]
+        return None
+
+    def init(self, commands):
+        &quot;&quot;&quot;
+        Initialize display.
+        &quot;&quot;&quot;
+        for command, data, delay in commands:
+            self._write(command, data)
+            sleep_ms(delay)
+
+    def _write(self, command=None, data=None):
+        &quot;&quot;&quot;SPI write to the device: commands and data.&quot;&quot;&quot;
+        if self.cs:
+            self.cs.off()
+        if command is not None:
+            self.dc.off()
+            self.spi.write(command)
+        if data is not None:
+            self.dc.on()
+            self.spi.write(data)
+            if self.cs:
+                self.cs.on()
+
+    def hard_reset(self):
+        &quot;&quot;&quot;
+        Hard reset display.
+        &quot;&quot;&quot;
+        if self.cs:
+            self.cs.off()
+        if self.reset:
+            self.reset.on()
+        sleep_ms(10)
+        if self.reset:
+            self.reset.off()
+        sleep_ms(10)
+        if self.reset:
+            self.reset.on()
+        sleep_ms(120)
+        if self.cs:
+            self.cs.on()
+
+    def soft_reset(self):
+        &quot;&quot;&quot;
+        Soft reset display.
+        &quot;&quot;&quot;
+        self._write(_ST7789_SWRESET)
+        sleep_ms(150)
+
+    def sleep_mode(self, value):
+        &quot;&quot;&quot;
+        Enable or disable display sleep mode.
+
+        Args:
+            value (bool): if True enable sleep mode. if False disable sleep
+            mode
+        &quot;&quot;&quot;
+        if value:
+            self._write(_ST7789_SLPIN)
+        else:
+            self._write(_ST7789_SLPOUT)
+
+    def inversion_mode(self, value):
+        &quot;&quot;&quot;
+        Enable or disable display inversion mode.
+
+        Args:
+            value (bool): if True enable inversion mode. if False disable
+            inversion mode
+        &quot;&quot;&quot;
+        if value:
+            self._write(_ST7789_INVON)
+        else:
+            self._write(_ST7789_INVOFF)
+
+    def rotation(self, rotation):
+        &quot;&quot;&quot;
+        Set display rotation.
+
+        Args:
+            rotation (int):
+                - 0-Portrait
+                - 1-Landscape
+                - 2-Inverted Portrait
+                - 3-Inverted Landscape
+
+            custom_rotations can have any number of rotations
+        &quot;&quot;&quot;
+        rotation %= len(self.rotations)
+        self._rotation = rotation
+        (
+            madctl,
+            self.width,
+            self.height,
+            self.xstart,
+            self.ystart,
+            self.needs_swap,
+        ) = self.rotations[rotation]
+
+        if self.color_order == BGR:
+            madctl |= _ST7789_MADCTL_BGR
+        else:
+            madctl &amp;= ~_ST7789_MADCTL_BGR
+
+        self._write(_ST7789_MADCTL, bytes([madctl]))
+
+    def _set_window(self, x0, y0, x1, y1):
+        &quot;&quot;&quot;
+        Set window to column and row address.
+
+        Args:
+            x0 (int): column start address
+            y0 (int): row start address
+            x1 (int): column end address
+            y1 (int): row end address
+        &quot;&quot;&quot;
+        if x0 &lt;= x1 &lt;= self.width and y0 &lt;= y1 &lt;= self.height:
+            self._write(
+                _ST7789_CASET,
+                struct.pack(_ENCODE_POS, x0 + self.xstart, x1 + self.xstart),
+            )
+            self._write(
+                _ST7789_RASET,
+                struct.pack(_ENCODE_POS, y0 + self.ystart, y1 + self.ystart),
+            )
+            self._write(_ST7789_RAMWR)
+
+    def vline(self, x, y, length, color):
+        &quot;&quot;&quot;
+        Draw vertical line at the given location and color.
+
+        Args:
+            x (int): x coordinate
+            Y (int): y coordinate
+            length (int): length of line
+            color (int): 565 encoded color
+        &quot;&quot;&quot;
+        self.fill_rect(x, y, 1, length, color)
+
+    def hline(self, x, y, length, color):
+        &quot;&quot;&quot;
+        Draw horizontal line at the given location and color.
+
+        Args:
+            x (int): x coordinate
+            Y (int): y coordinate
+            length (int): length of line
+            color (int): 565 encoded color
+        &quot;&quot;&quot;
+        self.fill_rect(x, y, length, 1, color)
+
+    def pixel(self, x, y, color):
+        &quot;&quot;&quot;
+        Draw a pixel at the given location and color.
+
+        Args:
+            x (int): x coordinate
+            Y (int): y coordinate
+            color (int): 565 encoded color
+        &quot;&quot;&quot;
+        self._set_window(x, y, x, y)
+        self._write(
+            None,
+            struct.pack(
+                _ENCODE_PIXEL_SWAPPED if self.needs_swap else _ENCODE_PIXEL, color
+            ),
+        )
+
+    def blit_buffer(self, buffer, x, y, width, height):
+        &quot;&quot;&quot;
+        Copy buffer to display at the given location.
+
+        Args:
+            buffer (bytes): Data to copy to display
+            x (int): Top left corner x coordinate
+            Y (int): Top left corner y coordinate
+            width (int): Width
+            height (int): Height
+        &quot;&quot;&quot;
+        self._set_window(x, y, x + width - 1, y + height - 1)
+        self._write(None, buffer)
+
+    def rect(self, x, y, w, h, color):
+        &quot;&quot;&quot;
+        Draw a rectangle at the given location, size and color.
+
+        Args:
+            x (int): Top left corner x coordinate
+            y (int): Top left corner y coordinate
+            width (int): Width in pixels
+            height (int): Height in pixels
+            color (int): 565 encoded color
+        &quot;&quot;&quot;
+        self.hline(x, y, w, color)
+        self.vline(x, y, h, color)
+        self.vline(x + w - 1, y, h, color)
+        self.hline(x, y + h - 1, w, color)
+
+    def fill_rect(self, x, y, width, height, color):
+        &quot;&quot;&quot;
+        Draw a rectangle at the given location, size and filled with color.
+
+        Args:
+            x (int): Top left corner x coordinate
+            y (int): Top left corner y coordinate
+            width (int): Width in pixels
+            height (int): Height in pixels
+            color (int): 565 encoded color
+        &quot;&quot;&quot;
+        self._set_window(x, y, x + width - 1, y + height - 1)
+        chunks, rest = divmod(width * height, _BUFFER_SIZE)
+        pixel = struct.pack(
+            _ENCODE_PIXEL_SWAPPED if self.needs_swap else _ENCODE_PIXEL, color
+        )
+        self.dc.on()
+        if chunks:
+            data = pixel * _BUFFER_SIZE
+            for _ in range(chunks):
+                self._write(None, data)
+        if rest:
+            self._write(None, pixel * rest)
+
+    def fill(self, color):
+        &quot;&quot;&quot;
+        Fill the entire FrameBuffer with the specified color.
+
+        Args:
+            color (int): 565 encoded color
+        &quot;&quot;&quot;
+        self.fill_rect(0, 0, self.width, self.height, color)
+
+    def line(self, x0, y0, x1, y1, color):
+        &quot;&quot;&quot;
+        Draw a single pixel wide line starting at x0, y0 and ending at x1, y1.
+
+        Args:
+            x0 (int): Start point x coordinate
+            y0 (int): Start point y coordinate
+            x1 (int): End point x coordinate
+            y1 (int): End point y coordinate
+            color (int): 565 encoded color
+        &quot;&quot;&quot;
+        steep = abs(y1 - y0) &gt; abs(x1 - x0)
+        if steep:
+            x0, y0 = y0, x0
+            x1, y1 = y1, x1
+        if x0 &gt; x1:
+            x0, x1 = x1, x0
+            y0, y1 = y1, y0
+        dx = x1 - x0
+        dy = abs(y1 - y0)
+        err = dx // 2
+        ystep = 1 if y0 &lt; y1 else -1
+        while x0 &lt;= x1:
+            if steep:
+                self.pixel(y0, x0, color)
+            else:
+                self.pixel(x0, y0, color)
+            err -= dy
+            if err &lt; 0:
+                y0 += ystep
+                err += dx
+            x0 += 1
+
+    def vscrdef(self, tfa, vsa, bfa):
+        &quot;&quot;&quot;
+        Set Vertical Scrolling Definition.
+
+        To scroll a 135x240 display these values should be 40, 240, 40.
+        There are 40 lines above the display that are not shown followed by
+        240 lines that are shown followed by 40 more lines that are not shown.
+        You could write to these areas off display and scroll them into view by
+        changing the TFA, VSA and BFA values.
+
+        Args:
+            tfa (int): Top Fixed Area
+            vsa (int): Vertical Scrolling Area
+            bfa (int): Bottom Fixed Area
+        &quot;&quot;&quot;
+        self._write(_ST7789_VSCRDEF, struct.pack(&quot;&gt;HHH&quot;, tfa, vsa, bfa))
+
+    def vscsad(self, vssa):
+        &quot;&quot;&quot;
+        Set Vertical Scroll Start Address of RAM.
+
+        Defines which line in the Frame Memory will be written as the first
+        line after the last line of the Top Fixed Area on the display
+
+        Example:
+
+            for line in range(40, 280, 1):
+                tft.vscsad(line)
+                utime.sleep(0.01)
+
+        Args:
+            vssa (int): Vertical Scrolling Start Address
+
+        &quot;&quot;&quot;
+        self._write(_ST7789_VSCSAD, struct.pack(&quot;&gt;H&quot;, vssa))
+
+    @micropython.viper
+    @staticmethod
+    def _pack8(glyphs, idx: uint, fg_color: uint, bg_color: uint):
+        buffer = bytearray(128)
+        bitmap = ptr16(buffer)
+        glyph = ptr8(glyphs)
+
+        for i in range(0, 64, 8):
+            byte = glyph[idx]
+            bitmap[i] = fg_color if byte &amp; _BIT7 else bg_color
+            bitmap[i + 1] = fg_color if byte &amp; _BIT6 else bg_color
+            bitmap[i + 2] = fg_color if byte &amp; _BIT5 else bg_color
+            bitmap[i + 3] = fg_color if byte &amp; _BIT4 else bg_color
+            bitmap[i + 4] = fg_color if byte &amp; _BIT3 else bg_color
+            bitmap[i + 5] = fg_color if byte &amp; _BIT2 else bg_color
+            bitmap[i + 6] = fg_color if byte &amp; _BIT1 else bg_color
+            bitmap[i + 7] = fg_color if byte &amp; _BIT0 else bg_color
+            idx += 1
+
+        return buffer
+
+    @micropython.viper
+    @staticmethod
+    def _pack16(glyphs, idx: uint, fg_color: uint, bg_color: uint):
+        &quot;&quot;&quot;
+        Pack a character into a byte array.
+
+        Args:
+            char (str): character to pack
+
+        Returns:
+            128 bytes: character bitmap in color565 format
+        &quot;&quot;&quot;
+
+        buffer = bytearray(256)
+        bitmap = ptr16(buffer)
+        glyph = ptr8(glyphs)
+
+        for i in range(0, 128, 16):
+            byte = glyph[idx]
+
+            bitmap[i] = fg_color if byte &amp; _BIT7 else bg_color
+            bitmap[i + 1] = fg_color if byte &amp; _BIT6 else bg_color
+            bitmap[i + 2] = fg_color if byte &amp; _BIT5 else bg_color
+            bitmap[i + 3] = fg_color if byte &amp; _BIT4 else bg_color
+            bitmap[i + 4] = fg_color if byte &amp; _BIT3 else bg_color
+            bitmap[i + 5] = fg_color if byte &amp; _BIT2 else bg_color
+            bitmap[i + 6] = fg_color if byte &amp; _BIT1 else bg_color
+            bitmap[i + 7] = fg_color if byte &amp; _BIT0 else bg_color
+            idx += 1
+
+            byte = glyph[idx]
+            bitmap[i + 8] = fg_color if byte &amp; _BIT7 else bg_color
+            bitmap[i + 9] = fg_color if byte &amp; _BIT6 else bg_color
+            bitmap[i + 10] = fg_color if byte &amp; _BIT5 else bg_color
+            bitmap[i + 11] = fg_color if byte &amp; _BIT4 else bg_color
+            bitmap[i + 12] = fg_color if byte &amp; _BIT3 else bg_color
+            bitmap[i + 13] = fg_color if byte &amp; _BIT2 else bg_color
+            bitmap[i + 14] = fg_color if byte &amp; _BIT1 else bg_color
+            bitmap[i + 15] = fg_color if byte &amp; _BIT0 else bg_color
+            idx += 1
+
+        return buffer
+
+    def _text8(self, font, text, x0, y0, fg_color=WHITE, bg_color=BLACK):
+        &quot;&quot;&quot;
+        Internal method to write characters with width of 8 and
+        heights of 8 or 16.
+
+        Args:
+            font (module): font module to use
+            text (str): text to write
+            x0 (int): column to start drawing at
+            y0 (int): row to start drawing at
+            color (int): 565 encoded color to use for characters
+            background (int): 565 encoded color to use for background
+        &quot;&quot;&quot;
+
+        for char in text:
+            ch = ord(char)
+            if (
+                font.FIRST &lt;= ch &lt; font.LAST
+                and x0 + font.WIDTH &lt;= self.width
+                and y0 + font.HEIGHT &lt;= self.height
+            ):
+                if font.HEIGHT == 8:
+                    passes = 1
+                    size = 8
+                    each = 0
+                else:
+                    passes = 2
+                    size = 16
+                    each = 8
+
+                for line in range(passes):
+                    idx = (ch - font.FIRST) * size + (each * line)
+                    buffer = self._pack8(font.FONT, idx, fg_color, bg_color)
+                    self.blit_buffer(buffer, x0, y0 + 8 * line, 8, 8)
+
+                x0 += 8
+
+    def _text16(self, font, text, x0, y0, fg_color=WHITE, bg_color=BLACK):
+        &quot;&quot;&quot;
+        Internal method to draw characters with width of 16 and heights of 16
+        or 32.
+
+        Args:
+            font (module): font module to use
+            text (str): text to write
+            x0 (int): column to start drawing at
+            y0 (int): row to start drawing at
+            color (int): 565 encoded color to use for characters
+            background (int): 565 encoded color to use for background
+        &quot;&quot;&quot;
+
+        for char in text:
+            ch = ord(char)
+            if (
+                font.FIRST &lt;= ch &lt; font.LAST
+                and x0 + font.WIDTH &lt;= self.width
+                and y0 + font.HEIGHT &lt;= self.height
+            ):
+                each = 16
+                if font.HEIGHT == 16:
+                    passes = 2
+                    size = 32
+                else:
+                    passes = 4
+                    size = 64
+
+                for line in range(passes):
+                    idx = (ch - font.FIRST) * size + (each * line)
+                    buffer = self._pack16(font.FONT, idx, fg_color, bg_color)
+                    self.blit_buffer(buffer, x0, y0 + 8 * line, 16, 8)
+            x0 += 16
+
+    def text(self, font, text, x0, y0, color=WHITE, background=BLACK):
+        &quot;&quot;&quot;
+        Draw text on display in specified font and colors. 8 and 16 bit wide
+        fonts are supported.
+
+        Args:
+            font (module): font module to use.
+            text (str): text to write
+            x0 (int): column to start drawing at
+            y0 (int): row to start drawing at
+            color (int): 565 encoded color to use for characters
+            background (int): 565 encoded color to use for background
+        &quot;&quot;&quot;
+        fg_color = color if self.needs_swap else ((color &lt;&lt; 8) &amp; 0xFF00) | (color &gt;&gt; 8)
+        bg_color = (
+            background
+            if self.needs_swap
+            else ((background &lt;&lt; 8) &amp; 0xFF00) | (background &gt;&gt; 8)
+        )
+
+        if font.WIDTH == 8:
+            self._text8(font, text, x0, y0, fg_color, bg_color)
+        else:
+            self._text16(font, text, x0, y0, fg_color, bg_color)
+
+    def bitmap(self, bitmap, x, y, index=0):
+        &quot;&quot;&quot;
+        Draw a bitmap on display at the specified column and row
+
+        Args:
+            bitmap (bitmap_module): The module containing the bitmap to draw
+            x (int): column to start drawing at
+            y (int): row to start drawing at
+            index (int): Optional index of bitmap to draw from multiple bitmap
+                module
+        &quot;&quot;&quot;
+        width = bitmap.WIDTH
+        height = bitmap.HEIGHT
+        to_col = x + width - 1
+        to_row = y + height - 1
+        if self.width &lt;= to_col or self.height &lt;= to_row:
+            return
+
+        bitmap_size = height * width
+        buffer_len = bitmap_size * 2
+        bpp = bitmap.BPP
+        bs_bit = bpp * bitmap_size * index  # if index &gt; 0 else 0
+        palette = bitmap.PALETTE
+        needs_swap = self.needs_swap
+        buffer = bytearray(buffer_len)
+
+        for i in range(0, buffer_len, 2):
+            color_index = 0
+            for _ in range(bpp):
+                color_index = (color_index &lt;&lt; 1) | (
+                    (bitmap.BITMAP[bs_bit &gt;&gt; 3] &gt;&gt; (7 - (bs_bit &amp; 7))) &amp; 1
+                )
+                bs_bit += 1
+
+            color = palette[color_index]
+            if needs_swap:
+                buffer[i] = color &amp; 0xFF
+                buffer[i + 1] = color &gt;&gt; 8
+            else:
+                buffer[i] = color &gt;&gt; 8
+                buffer[i + 1] = color &amp; 0xFF
+
+        self._set_window(x, y, to_col, to_row)
+        self._write(None, buffer)
+
+    def pbitmap(self, bitmap, x, y, index=0):
+        &quot;&quot;&quot;
+        Draw a bitmap on display at the specified column and row one row at a time
+
+        Args:
+            bitmap (bitmap_module): The module containing the bitmap to draw
+            x (int): column to start drawing at
+            y (int): row to start drawing at
+            index (int): Optional index of bitmap to draw from multiple bitmap
+                module
+
+        &quot;&quot;&quot;
+        width = bitmap.WIDTH
+        height = bitmap.HEIGHT
+        bitmap_size = height * width
+        bpp = bitmap.BPP
+        bs_bit = bpp * bitmap_size * index  # if index &gt; 0 else 0
+        palette = bitmap.PALETTE
+        needs_swap = self.needs_swap
+        buffer = bytearray(bitmap.WIDTH * 2)
+
+        for row in range(height):
+            for col in range(width):
+                color_index = 0
+                for _ in range(bpp):
+                    color_index &lt;&lt;= 1
+                    color_index |= (
+                        bitmap.BITMAP[bs_bit // 8] &amp; 1 &lt;&lt; (7 - (bs_bit % 8))
+                    ) &gt; 0
+                    bs_bit += 1
+                color = palette[color_index]
+                if needs_swap:
+                    buffer[col * 2] = color &amp; 0xFF
+                    buffer[col * 2 + 1] = color &gt;&gt; 8 &amp; 0xFF
+                else:
+                    buffer[col * 2] = color &gt;&gt; 8 &amp; 0xFF
+                    buffer[col * 2 + 1] = color &amp; 0xFF
+
+            to_col = x + width - 1
+            to_row = y + row
+            if self.width &gt; to_col and self.height &gt; to_row:
+                self._set_window(x, y + row, to_col, to_row)
+                self._write(None, buffer)
+
+    def write(self, font, string, x, y, fg=WHITE, bg=BLACK):
+        &quot;&quot;&quot;
+        Write a string using a converted true-type font on the display starting
+        at the specified column and row
+
+        Args:
+            font (font): The module containing the converted true-type font
+            s (string): The string to write
+            x (int): column to start writing
+            y (int): row to start writing
+            fg (int): foreground color, optional, defaults to WHITE
+            bg (int): background color, optional, defaults to BLACK
+        &quot;&quot;&quot;
+        buffer_len = font.HEIGHT * font.MAX_WIDTH * 2
+        buffer = bytearray(buffer_len)
+        fg_hi = fg &gt;&gt; 8
+        fg_lo = fg &amp; 0xFF
+
+        bg_hi = bg &gt;&gt; 8
+        bg_lo = bg &amp; 0xFF
+
+        for character in string:
+            try:
+                char_index = font.MAP.index(character)
+                offset = char_index * font.OFFSET_WIDTH
+                bs_bit = font.OFFSETS[offset]
+                if font.OFFSET_WIDTH &gt; 1:
+                    bs_bit = (bs_bit &lt;&lt; 8) + font.OFFSETS[offset + 1]
+
+                if font.OFFSET_WIDTH &gt; 2:
+                    bs_bit = (bs_bit &lt;&lt; 8) + font.OFFSETS[offset + 2]
+
+                char_width = font.WIDTHS[char_index]
+                buffer_needed = char_width * font.HEIGHT * 2
+
+                for i in range(0, buffer_needed, 2):
+                    if font.BITMAPS[bs_bit // 8] &amp; 1 &lt;&lt; (7 - (bs_bit % 8)) &gt; 0:
+                        buffer[i] = fg_hi
+                        buffer[i + 1] = fg_lo
+                    else:
+                        buffer[i] = bg_hi
+                        buffer[i + 1] = bg_lo
+
+                    bs_bit += 1
+
+                to_col = x + char_width - 1
+                to_row = y + font.HEIGHT - 1
+                if self.width &gt; to_col and self.height &gt; to_row:
+                    self._set_window(x, y, to_col, to_row)
+                    self._write(None, buffer[:buffer_needed])
+
+                x += char_width
+
+            except ValueError:
+                pass
+
+    def write_width(self, font, string):
+        &quot;&quot;&quot;
+        Returns the width in pixels of the string if it was written with the
+        specified font
+
+        Args:
+            font (font): The module containing the converted true-type font
+            string (string): The string to measure
+
+        Returns:
+            int: The width of the string in pixels
+
+        &quot;&quot;&quot;
+        width = 0
+        for character in string:
+            try:
+                char_index = font.MAP.index(character)
+                width += font.WIDTHS[char_index]
+            except ValueError:
+                pass
+
+        return width
+
+    @micropython.native
+    def polygon(self, points, x, y, color, angle=0, center_x=0, center_y=0):
+        &quot;&quot;&quot;
+        Draw a polygon on the display.
+
+        Args:
+            points (list): List of points to draw.
+            x (int): X-coordinate of the polygon&#x27;s position.
+            y (int): Y-coordinate of the polygon&#x27;s position.
+            color (int): 565 encoded color.
+            angle (float): Rotation angle in radians (default: 0).
+            center_x (int): X-coordinate of the rotation center (default: 0).
+            center_y (int): Y-coordinate of the rotation center (default: 0).
+
+        Raises:
+            ValueError: If the polygon has less than 3 points.
+        &quot;&quot;&quot;
+        if len(points) &lt; 3:
+            raise ValueError(&quot;Polygon must have at least 3 points.&quot;)
+
+        if angle:
+            cos_a = cos(angle)
+            sin_a = sin(angle)
+            rotated = [
+                (
+                    x
+                    + center_x
+                    + int(
+                        (point[0] - center_x) * cos_a - (point[1] - center_y) * sin_a
+                    ),
+                    y
+                    + center_y
+                    + int(
+                        (point[0] - center_x) * sin_a + (point[1] - center_y) * cos_a
+                    ),
+                )
+                for point in points
+            ]
+        else:
+            rotated = [(x + int((point[0])), y + int((point[1]))) for point in points]
+
+        for i in range(1, len(rotated)):
+            self.line(
+                rotated[i - 1][0],
+                rotated[i - 1][1],
+                rotated[i][0],
+                rotated[i][1],
+                color,
+            )
+</code></pre></div></details>
+  </main>
+</div>
+<script>
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var code = btn.parentElement.querySelector('code');
+      navigator.clipboard.writeText(code.innerText).then(function(){
+        var t = btn.textContent; btn.textContent = 'copied'; 
+        setTimeout(function(){ btn.textContent = t; }, 1200);
+      });
+    });
+  });
+  document.getElementById('expandAll').addEventListener('click', function(){
+    document.querySelectorAll('details.file').forEach(function(d){ d.open = true; });
+  });
+  document.getElementById('collapseAll').addEventListener('click', function(){
+    document.querySelectorAll('details.file').forEach(function(d){ d.open = false; });
+  });
+</script>
+</body>
+</html>

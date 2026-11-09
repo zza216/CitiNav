@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# macOS
+.DS_Store
+
+# build artifacts / bundles
+*.zip
+*.tar.gz
+
+# large binaries & vendor docs (uncomment to include them in the repo)
+ESP32_GENERIC_C6-*.bin
+*.pdf

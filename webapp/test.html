@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#202020">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>CitiNav</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{
+    --bg:#202020; --bg2:#3a3a3a; --green:#00dc50; --dim:#1c4228;
+    --yellow:#ffd700; --text:#e8e8e8; --muted:#9a9a9a; --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg); color:var(--text);
+    font:16px/1.4 -apple-system,system-ui,Segoe UI,Roboto,sans-serif;
+    display:flex; justify-content:center; -webkit-tap-highlight-color:transparent;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+  main{width:100%; max-width:560px; padding:14px; display:flex; flex-direction:column; gap:12px;
+    min-height:100%; padding-bottom:70px}
+  header{display:flex; align-items:center; justify-content:space-between; gap:10px}
+  h1{font-size:24px; margin:0; color:var(--yellow); letter-spacing:.5px}
+  .status{font-size:13px; padding:6px 10px; border-radius:999px; background:var(--bg2); color:var(--muted); white-space:nowrap}
+  .status.on{background:var(--dim); color:var(--green)}
+  .status.err{background:#3a1c1c; color:var(--danger)}
+  .row{display:flex; gap:10px}
+  button{font:inherit; color:var(--text); background:var(--bg2); border:1px solid #4a4a4a;
+    border-radius:12px; padding:12px 14px; cursor:pointer; transition:transform .05s, background .15s;}
+  button:active{transform:scale(.97)}
+  button:disabled{opacity:.4; cursor:default}
+  button.primary{background:var(--green); color:#062b12; border-color:var(--green); font-weight:700}
+  button.grow{flex:1}
+  .hidden{display:none !important}
+  .tab{display:flex; flex-direction:column; gap:12px}
+  .arrows{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
+  .arrow{display:flex; flex-direction:column; align-items:center; gap:4px; padding:22px 6px; font-size:36px; line-height:1}
+  .arrow span{font-size:11px; color:var(--muted); letter-spacing:.4px}
+  .arrow.active{background:var(--dim); border-color:var(--green); color:var(--green)}
+  .arrow.active span{color:var(--green)}
+  .secondary{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
+  .secondary button{padding:14px 6px; font-size:14px}
+  .fieldset{display:flex; gap:10px}
+  label{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted)}
+  input[type=text],input[type=number]{flex:1; min-width:0; font:inherit; color:var(--text);
+    background:var(--bg2); border:1px solid #4a4a4a; border-radius:10px; padding:11px 12px;}
+  input[type=checkbox]{width:20px; height:20px; accent-color:var(--green)}
+  input[type=radio]{accent-color:var(--green)}
+  .opts{display:flex; flex-wrap:wrap; gap:16px}
+  .opts label{color:var(--text)}
+  .preview{font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--muted)}
+  .preview b{color:var(--yellow); font-weight:600}
+  .logwrap{display:flex; flex-direction:column; border:1px solid #3a3a3a; border-radius:12px; overflow:hidden}
+  .loghead{display:flex; justify-content:space-between; align-items:center; padding:8px 12px;
+    background:var(--bg2); font-size:13px; color:var(--muted)}
+  .loghead button{padding:4px 10px; font-size:12px; border-radius:8px}
+  #log{margin:0; padding:12px; height:150px; overflow:auto; font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+    white-space:pre-wrap; word-break:break-word}
+  .t{color:var(--muted)} .tx{color:var(--yellow)} .rx{color:var(--green)} .err{color:var(--danger)}
+
+  /* route / map */
+  #map{height:44vh; min-height:240px; border-radius:12px; overflow:hidden; background:#2a2a2a; z-index:0}
+  .searchwrap{position:relative}
+  .sugg{display:flex; flex-direction:column; gap:6px; margin-top:6px}
+  .sugg-item{text-align:left; padding:10px 12px; font-size:14px}
+  .seg{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px}
+  .seg label{justify-content:center; gap:6px; padding:11px 6px; border:1px solid #4a4a4a; border-radius:12px;
+    background:var(--bg2); color:var(--text); cursor:pointer; font-size:14px}
+  .seg label:has(input:checked){background:var(--dim); border-color:var(--green); color:var(--green)}
+  .seg input{position:absolute; opacity:0; width:0}
+  .dest{font-size:14px; padding:11px 12px; border:1px solid #3a3a3a; border-radius:12px; background:#262626}
+  .dest b{color:var(--green)} .dest small{color:var(--muted); display:block; margin-top:2px}
+  .tabbar{position:fixed; left:0; right:0; bottom:0; display:flex; gap:8px; padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    background:var(--bg); border-top:1px solid #333; max-width:560px; margin:0 auto}
+  .tabbar button{flex:1}
+  .tabbar button.active{background:var(--dim); border-color:var(--green); color:var(--green)}
+  .leaflet-container{font:inherit}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>CitiNav <small style="font-size:12px;color:var(--muted);letter-spacing:0">test</small></h1>
+    <a href="./" style="color:var(--yellow);font-size:14px;text-decoration:none">🧭 Web Nav →</a>
+    <div id="status" class="status">disconnected</div>
+  </header>
+
+  <div class="row">
+    <button id="connectBtn" class="primary grow">Connect device</button>
+    <button id="disconnectBtn" class="grow" disabled>Disconnect</button>
+  </div>
+
+  <!-- ============ ROUTE TAB ============ -->
+  <section id="tab-route" class="tab">
+    <div class="searchwrap">
+      <input id="search" type="text" placeholder="Search a destination…" autocomplete="off" style="width:100%">
+    </div>
+    <div id="sugg" class="sugg"></div>
+
+    <div id="map"></div>
+
+    <div class="row">
+      <button id="myLocBtn" class="grow">◎ My location</button>
+    </div>
+
+    <div class="seg">
+      <label><input type="radio" name="mode" value="bike" checked> 🚲 Bike</label>
+      <label><input type="radio" name="mode" value="walk"> 🚶 Walk</label>
+      <label><input type="radio" name="mode" value="drive"> 🚗 Drive</label>
+    </div>
+
+    <div class="dest">
+      <b id="destLabel">No destination yet</b>
+      <small id="routeInfo">Search or tap the map to drop a pin.</small>
+    </div>
+
+    <button id="startBtn" class="primary">▶ Start in Google Maps</button>
+  </section>
+
+  <!-- ============ CONTROL TAB ============ -->
+  <section id="tab-control" class="tab hidden">
+    <div class="fieldset">
+      <label style="flex:2">Street
+        <input id="street" type="text" maxlength="10" placeholder="Broadway" autocomplete="off">
+      </label>
+      <label style="flex:1">Dist m
+        <input id="dist" type="number" min="0" max="9999" inputmode="numeric" placeholder="30">
+      </label>
+    </div>
+
+    <div class="arrows">
+      <button class="arrow" data-dir="L">◀<span>TURN LEFT</span></button>
+      <button class="arrow" data-dir="S">▲<span>STRAIGHT</span></button>
+      <button class="arrow" data-dir="R">▶<span>TURN RIGHT</span></button>
+    </div>
+
+    <div class="secondary">
+      <button data-dir="U">↺ U-TURN</button>
+      <button data-dir="A">⚑ ARRIVE</button>
+      <button data-dir="X">✕ CLEAR</button>
+    </div>
+
+    <div class="opts">
+      <label><input type="checkbox" id="blink"> Blink</label>
+      <label><input type="checkbox" id="auto"> Auto-reconnect</label>
+      <span class="preview" style="margin-left:auto">payload: <b id="preview">—</b></span>
+    </div>
+  </section>
+
+  <!-- shared log -->
+  <div class="logwrap">
+    <div class="loghead"><span>Log</span><button id="clearBtn">clear</button></div>
+    <pre id="log"></pre>
+  </div>
+</main>
+
+<nav class="tabbar">
+  <button data-tab="route" class="active">🧭 Route</button>
+  <button data-tab="control">🎮 Control</button>
+</nav>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+"use strict";
+
+// ================= BLE contract (matches citinav_landscape.py) =================
+const SERVICE = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+const CMD     = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+const ACK     = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+const BLINKABLE = ["L", "R", "S", "U"];
+const GM_MODE = { bike: "bicycling", walk: "walking", drive: "driving" };
+
+const $ = (id) => document.getElementById(id);
+const statusEl = $("status"), logEl = $("log"), previewEl = $("preview");
+const connectBtn = $("connectBtn"), disconnectBtn = $("disconnectBtn");
+const streetEl = $("street"), distEl = $("dist"), blinkEl = $("blink"), autoEl = $("auto");
+
+let device = null, cmdChar = null, ackChar = null;
+let wantConnected = false, reconnectDelay = 1000, reconnectTimer = null;
+
+// ================= log / status =================
+function log(msg, cls) {
+  const ts = new Date().toTimeString().slice(0, 8);
+  const line = document.createElement("span");
+  line.className = cls || "";
+  line.textContent = `[${ts}] ${msg}\n`;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function setStatus(text, cls) { statusEl.textContent = text; statusEl.className = "status" + (cls ? " " + cls : ""); }
+
+// ================= prefs =================
+function loadPrefs() {
+  try {
+    streetEl.value = localStorage.getItem("street") || "";
+    distEl.value = localStorage.getItem("dist") || "";
+    blinkEl.checked = localStorage.getItem("blink") === "1";
+    autoEl.checked = localStorage.getItem("auto") !== "0";
+  } catch (e) {}
+}
+function savePrefs() {
+  try {
+    localStorage.setItem("street", streetEl.value);
+    localStorage.setItem("dist", distEl.value);
+    localStorage.setItem("blink", blinkEl.checked ? "1" : "0");
+    localStorage.setItem("auto", autoEl.checked ? "1" : "0");
+  } catch (e) {}
+}
+
+// ================= payload =================
+function buildCmd(dir) {
+  let cmd = dir;
+  if (BLINKABLE.includes(dir) && blinkEl.checked) cmd += "B";
+  const street = streetEl.value.trim(), dist = distEl.value.trim();
+  if (street || dist) { cmd += ":" + street.slice(0, 10); if (dist) cmd += ":" + dist; }
+  return cmd;
+}
+function refreshPreview() { previewEl.textContent = buildCmd("R"); }
+
+// ================= tabs =================
+function showTab(name) {
+  document.querySelectorAll(".tab").forEach((s) => s.classList.toggle("hidden", s.id !== "tab-" + name));
+  document.querySelectorAll(".tabbar button").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
+  if (name === "route" && map) setTimeout(() => map.invalidateSize(), 60);
+}
+document.querySelectorAll(".tabbar button").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
+
+// ================= BLE =================
+async function connect() {
+  if (!navigator.bluetooth) { log("Web Bluetooth unsupported. Use Chrome on Android/desktop.", "err"); setStatus("unsupported", "err"); return; }
+  try {
+    log("requesting device (CitiNav)…");
+    device = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: "CitiNav" }], optionalServices: [SERVICE] });
+    device.addEventListener("gattserverdisconnected", onDisconnect);
+    wantConnected = true; reconnectDelay = 1000;
+    await openGatt();
+  } catch (e) { log("connect failed: " + e.message, "err"); wantConnected = false; setStatus("disconnected"); }
+}
+async function openGatt() {
+  try {
+    log("connecting to " + (device.name || device.id) + " …");
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE);
+    cmdChar = await service.getCharacteristic(CMD);
+    ackChar = await service.getCharacteristic(ACK);
+    await ackChar.startNotifications();
+    ackChar.addEventListener("characteristicvaluechanged", (e) => log("← ack: " + new TextDecoder().decode(e.target.value), "rx"));
+    connectBtn.disabled = true; disconnectBtn.disabled = false; reconnectDelay = 1000;
+    setStatus("connected", "on"); log("connected ✔", "rx");
+  } catch (e) { log("gatt failed: " + e.message, "err"); maybeReconnect(); }
+}
+function maybeReconnect() {
+  if (!wantConnected || !autoEl.checked || !device) return;
+  clearTimeout(reconnectTimer);
+  log(`reconnecting in ${reconnectDelay / 1000}s…`);
+  reconnectTimer = setTimeout(() => { reconnectDelay = Math.min(reconnectDelay * 2, 15000); openGatt(); }, reconnectDelay);
+}
+function onDisconnect() {
+  cmdChar = ackChar = null;
+  connectBtn.disabled = false; disconnectBtn.disabled = true;
+  if (wantConnected) { log("disconnected — auto-reconnect on", "err"); setStatus("reconnecting…", "err"); maybeReconnect(); }
+  else { log("disconnected"); setStatus("disconnected"); }
+}
+function disconnect() {
+  wantConnected = false; clearTimeout(reconnectTimer);
+  if (device && device.gatt.connected) device.gatt.disconnect(); else onDisconnect();
+}
+async function write(cmd) {
+  if (!cmdChar) { log("not connected — sending skipped (" + cmd + ")", "err"); return false; }
+  try {
+    const data = new TextEncoder().encode(cmd);
+    if (cmdChar.writeValueWithResponse) await cmdChar.writeValueWithResponse(data); else await cmdChar.writeValue(data);
+    log("→ " + cmd, "tx");
+    if (navigator.vibrate) navigator.vibrate(12);
+    return true;
+  } catch (e) { log("write failed: " + e.message, "err"); return false; }
+}
+async function send(dir) { await write(buildCmd(dir)); }
+
+connectBtn.addEventListener("click", connect);
+disconnectBtn.addEventListener("click", disconnect);
+$("clearBtn").addEventListener("click", () => (logEl.textContent = ""));
+
+document.querySelectorAll("[data-dir]").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    document.querySelectorAll(".arrow").forEach((b) => b.classList.remove("active"));
+    if (btn.classList.contains("arrow")) btn.classList.add("active");
+    await send(btn.dataset.dir);
+  });
+});
+[streetEl, distEl, blinkEl].forEach((el) => el.addEventListener("input", () => { savePrefs(); refreshPreview(); }));
+autoEl.addEventListener("change", savePrefs);
+
+document.addEventListener("keydown", (e) => {
+  if (document.activeElement && ["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+  if ($("tab-control").classList.contains("hidden")) return;
+  const keys = { ArrowLeft: "L", ArrowUp: "S", ArrowRight: "R", u: "U", a: "A", x: "X" };
+  const dir = keys[e.key];
+  if (dir) { e.preventDefault(); const b = document.querySelector(`.arrow[data-dir="${dir}"], .secondary [data-dir="${dir}"]`); if (b) b.click(); }
+});
+
+// ================= MAP / ROUTE (v3) =================
+let map = null, marker = null, routeLine = null;
+let dest = null;              // {lat, lng, name}
+let userLatLng = null;
+
+const suggEl = $("sugg"), searchEl = $("search");
+
+function fmtPlace(p) {
+  if (!p) return "";
+  const name = p.name || p.street || [p.housenumber, p.street].filter(Boolean).join(" ");
+  return [name, p.city || p.town || p.village, p.state, p.country].filter(Boolean).slice(0, 3).join(", ");
+}
+function setDest(lat, lng, name) {
+  dest = { lat, lng, name: name || null };
+  if (marker) marker.setLatLng([lat, lng]);
+  $("destLabel").textContent = name || (lat.toFixed(5) + ", " + lng.toFixed(5));
+  $("routeInfo").textContent = "Destination set — pick a mode and start.";
+  if (!name) reverseGeocode(lat, lng);
+  else previewRoute();
+}
+async function reverseGeocode(lat, lng) {
+  try {
+    const j = await (await fetch(`https://photon.komoot.io/reverse?lon=${lng}&lat=${lat}`)).json();
+    const f = j.features && j.features[0];
+    if (f) { const n = fmtPlace(f.properties); if (n) { dest.name = n; $("destLabel").textContent = n; } }
+  } catch (e) { /* offline: keep coords */ }
+  previewRoute();
+}
+async function previewRoute() {
+  if (!dest || !userLatLng || !window.L) return;
+  try {
+    const [a, b] = [userLatLng, [dest.lat, dest.lng]];
+    const url = `https://router.project-osrm.org/route/v1/driving/${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson`;
+    const j = await (await fetch(url)).json();
+    const r = j.routes[0];
+    const coords = r.geometry.coordinates.map((c) => [c[1], c[0]]);
+    if (routeLine) map.removeLayer(routeLine);
+    routeLine = L.polyline(coords, { color: "#00dc50", weight: 4, opacity: 0.85 }).addTo(map);
+    $("routeInfo").textContent = `${(r.distance / 1000).toFixed(1)} km · ~${Math.round(r.duration / 60)} min (driving preview)`;
+  } catch (e) { /* preview is best-effort */ }
+}
+
+function initMap() {
+  if (!window.L) { log("map failed to load (offline?)", "err"); $("map").style.display = "none"; return; }
+  map = L.map("map", { zoomControl: true }).setView([40.73, -73.99], 13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(map);
+  marker = L.marker([40.73, -73.99], { draggable: true }).addTo(map);
+  marker.on("dragend", () => { const ll = marker.getLatLng(); setDest(ll.lat, ll.lng); });
+  map.on("click", (e) => { marker.setLatLng(e.latlng); setDest(e.latlng.lat, e.latlng.lng); });
+  locateMe(true);
+}
+
+function locateMe(silent) {
+  if (!navigator.geolocation) { if (!silent) log("geolocation unavailable", "err"); return; }
+  navigator.geolocation.getCurrentPosition(
+    (p) => {
+      userLatLng = [p.coords.latitude, p.coords.longitude];
+      if (map) { map.setView(userLatLng, 15); marker.setLatLng(userLatLng); }
+      if (!silent) log("located you", "rx");
+      previewRoute();
+    },
+    (e) => { if (!silent) log("location denied: " + e.message, "err"); },
+    { enableHighAccuracy: true, timeout: 8000 }
+  );
+}
+$("myLocBtn").addEventListener("click", () => locateMe(false));
+
+let searchTimer;
+searchEl.addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  const q = searchEl.value.trim();
+  if (q.length < 3) { suggEl.innerHTML = ""; return; }
+  searchTimer = setTimeout(() => doSearch(q), 450);
+});
+async function doSearch(q) {
+  try {
+    const j = await (await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6`)).json();
+    suggEl.innerHTML = "";
+    (j.features || []).forEach((f) => {
+      const [lon, lat] = f.geometry.coordinates;
+      const name = fmtPlace(f.properties) || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+      const b = document.createElement("button");
+      b.className = "sugg-item"; b.textContent = name;
+      b.onclick = () => { suggEl.innerHTML = ""; searchEl.value = name; map.setView([lat, lon], 15); setDest(lat, lon, name); };
+      suggEl.appendChild(b);
+    });
+  } catch (e) { log("search failed: " + e.message, "err"); }
+}
+
+function currentMode() { return document.querySelector('input[name="mode"]:checked').value; }
+
+async function startMaps() {
+  if (!dest) { log("pick a destination first", "err"); return; }
+  // give the device an immediate banner (destination) while Maps opens
+  const name = (dest.name || "DEST").split(",")[0].slice(0, 10);
+  await write("S:" + name);
+  const mode = GM_MODE[currentMode()];
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}` +
+              `&travelmode=${mode}&dir_action=navigate`;
+  log("opening Google Maps (" + mode + ")", "tx");
+  window.open(url, "_blank");
+}
+$("startBtn").addEventListener("click", startMaps);
+
+// ================= service worker =================
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+
+// ================= boot =================
+loadPrefs();
+refreshPreview();
+setStatus("disconnected");
+showTab("route");
+initMap();
+</script>
+</body>
+</html>

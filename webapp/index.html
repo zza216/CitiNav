@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#202020">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>CitiNav — Nav</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{
+    --bg:#202020; --bg2:#3a3a3a; --green:#00dc50; --dim:#1c4228;
+    --yellow:#ffd700; --text:#e8e8e8; --muted:#9a9a9a; --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg); color:var(--text);
+    font:16px/1.4 -apple-system,system-ui,Segoe UI,Roboto,sans-serif;
+    display:flex; justify-content:center; -webkit-tap-highlight-color:transparent;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+  main{width:100%; max-width:560px; padding:14px; display:flex; flex-direction:column; gap:12px}
+  header{display:flex; align-items:center; justify-content:space-between; gap:10px}
+  h1{font-size:22px; margin:0; color:var(--yellow); letter-spacing:.5px}
+  .status{font-size:13px; padding:6px 10px; border-radius:999px; background:var(--bg2); color:var(--muted); white-space:nowrap}
+  .status.on{background:var(--dim); color:var(--green)}
+  .status.err{background:#3a1c1c; color:var(--danger)}
+  .row{display:flex; gap:10px}
+  button{font:inherit; color:var(--text); background:var(--bg2); border:1px solid #4a4a4a;
+    border-radius:12px; padding:12px 14px; cursor:pointer; transition:transform .05s, background .15s;}
+  button:active{transform:scale(.97)}
+  button:disabled{opacity:.4; cursor:default}
+  button.primary{background:var(--green); color:#062b12; border-color:var(--green); font-weight:700}
+  button.danger{background:#3a1c1c; border-color:#7a2a2a; color:#ffb4b4}
+  button.grow{flex:1}
+  a.link{color:var(--yellow); text-decoration:none; font-size:14px}
+
+  /* instruction card */
+  .instr{display:flex; align-items:center; gap:16px; background:#262626; border:1px solid #3a3a3a;
+    border-radius:16px; padding:14px 18px; min-height:92px}
+  .iarrow{font-size:56px; line-height:1; color:var(--green); width:64px; text-align:center}
+  .itext{min-width:0}
+  .istreet{font-size:22px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .idist{font-size:15px; color:var(--muted)}
+  .idist b{color:var(--green)}
+
+  #map{height:40vh; min-height:220px; border-radius:14px; overflow:hidden; background:#2a2a2a; z-index:0}
+  .inlabel{display:block; font-size:13px; color:var(--muted); margin-bottom:6px}
+  input[type=text]{width:100%; font:inherit; color:var(--text); background:var(--bg2);
+    border:1px solid #4a4a4a; border-radius:10px; padding:11px 12px;}
+  .sugg{display:flex; flex-direction:column; gap:6px; margin-top:6px}
+  .sugg-item{text-align:left; padding:10px 12px; font-size:14px}
+  .seg{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px}
+  .seg label{display:flex; justify-content:center; gap:6px; padding:11px 6px; border:1px solid #4a4a4a;
+    border-radius:12px; background:var(--bg2); color:var(--text); cursor:pointer; font-size:14px; align-items:center}
+  .seg label:has(input:checked){background:var(--dim); border-color:var(--green); color:var(--green)}
+  .seg input{position:absolute; opacity:0; width:0}
+  .dest{font-size:14px; padding:11px 12px; border:1px solid #3a3a3a; border-radius:12px; background:#262626}
+  .dest b{color:var(--green)} .dest small{color:var(--muted); display:block; margin-top:2px}
+  .logwrap{display:flex; flex-direction:column; border:1px solid #3a3a3a; border-radius:12px; overflow:hidden}
+  .loghead{display:flex; justify-content:space-between; align-items:center; padding:8px 12px;
+    background:var(--bg2); font-size:13px; color:var(--muted)}
+  .loghead button{padding:4px 10px; font-size:12px; border-radius:8px}
+  #log{margin:0; padding:12px; height:120px; overflow:auto; font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+    white-space:pre-wrap; word-break:break-word}
+  .t{color:var(--muted)} .tx{color:var(--yellow)} .rx{color:var(--green)} .err{color:var(--danger)}
+  .leaflet-container{font:inherit}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>CitiNav</h1>
+    <a class="link" href="test.html">🎮 Test</a>
+    <div id="status" class="status">disconnected</div>
+  </header>
+
+  <div class="row">
+    <button id="connectBtn" class="primary grow">Connect device</button>
+    <button id="disconnectBtn" class="grow" disabled>Disconnect</button>
+  </div>
+
+  <div class="instr">
+    <div class="iarrow" id="iArrow">▲</div>
+    <div class="itext">
+      <div class="istreet" id="iStreet">Ready</div>
+      <div class="idist" id="iDist">Pick a destination, then Go.</div>
+    </div>
+  </div>
+
+  <div id="map"></div>
+
+  <div>
+    <label class="inlabel">Destination</label>
+    <input id="search" type="text" placeholder="Search a place or address…" autocomplete="off">
+    <div id="sugg" class="sugg"></div>
+  </div>
+
+  <div class="seg">
+    <label><input type="radio" name="mode" value="bike" checked> 🚲 Bike</label>
+    <label><input type="radio" name="mode" value="walk"> 🚶 Walk</label>
+    <label><input type="radio" name="mode" value="drive"> 🚗 Drive</label>
+  </div>
+
+  <div class="dest">
+    <b id="destLabel">No destination yet</b>
+    <small id="routeInfo">Tap the map or search to drop a pin.</small>
+  </div>
+
+  <div class="row">
+    <button id="myLocBtn" class="grow">◎ My location</button>
+    <button id="goBtn" class="primary grow">▶ Go</button>
+    <button id="stopBtn" class="danger grow" disabled>■ Stop</button>
+  </div>
+
+  <div class="logwrap">
+    <div class="loghead"><span>Log</span><button id="clearBtn">clear</button></div>
+    <pre id="log"></pre>
+  </div>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+"use strict";
+
+// ============ BLE contract (matches citinav_landscape.py) ============
+const SERVICE = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+const CMD     = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+const ACK     = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+const BLINKABLE = ["L", "R", "S", "U"];
+
+// ============ nav tuning ============
+const VALHALLA  = "https://valhalla1.openstreetmap.de/route";
+const COSTING   = { bike: "bicycle", walk: "pedestrian", drive: "auto" };
+const BLINK_M   = 30;      // blink when this close to the turn
+const ARRIVE_M  = 30;      // send ARRIVE this close to the destination
+const BUCKET_M  = 50;      // re-send distance every this many metres
+
+const $ = (id) => document.getElementById(id);
+const statusEl = $("status"), logEl = $("log");
+const connectBtn = $("connectBtn"), disconnectBtn = $("disconnectBtn");
+const goBtn = $("goBtn"), stopBtn = $("stopBtn");
+
+// ============ log / status ============
+function log(msg, cls) {
+  const ts = new Date().toTimeString().slice(0, 8);
+  const s = document.createElement("span");
+  s.className = cls || ""; s.textContent = `[${ts}] ${msg}\n`;
+  logEl.appendChild(s); logEl.scrollTop = logEl.scrollHeight;
+}
+function setStatus(t, c) { statusEl.textContent = t; statusEl.className = "status" + (c ? " " + c : ""); }
+$("clearBtn").addEventListener("click", () => (logEl.textContent = ""));
+
+// ============ BLE ============
+let device = null, cmdChar = null, ackChar = null;
+let wantConnected = false, reconnectDelay = 1000, reconnectTimer = null;
+
+async function connect() {
+  if (!navigator.bluetooth) { log("Web Bluetooth unsupported. Use Chrome on Android/desktop.", "err"); setStatus("unsupported", "err"); return; }
+  try {
+    log("requesting device (CitiNav)…");
+    device = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: "CitiNav" }], optionalServices: [SERVICE] });
+    device.addEventListener("gattserverdisconnected", onDisconnect);
+    wantConnected = true; reconnectDelay = 1000; await openGatt();
+  } catch (e) { log("connect failed: " + e.message, "err"); wantConnected = false; setStatus("disconnected"); }
+}
+async function openGatt() {
+  try {
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE);
+    cmdChar = await service.getCharacteristic(CMD);
+    ackChar = await service.getCharacteristic(ACK);
+    await ackChar.startNotifications();
+    ackChar.addEventListener("characteristicvaluechanged", (e) => log("← ack: " + new TextDecoder().decode(e.target.value), "rx"));
+    connectBtn.disabled = true; disconnectBtn.disabled = false; reconnectDelay = 1000;
+    setStatus("connected", "on"); log("connected ✔", "rx");
+  } catch (e) { log("gatt failed: " + e.message, "err"); maybeReconnect(); }
+}
+function maybeReconnect() {
+  if (!wantConnected || !device) return;
+  clearTimeout(reconnectTimer);
+  log(`reconnecting in ${reconnectDelay / 1000}s…`);
+  reconnectTimer = setTimeout(() => { reconnectDelay = Math.min(reconnectDelay * 2, 15000); openGatt(); }, reconnectDelay);
+}
+function onDisconnect() {
+  cmdChar = ackChar = null; connectBtn.disabled = false; disconnectBtn.disabled = true;
+  if (wantConnected) { log("disconnected — reconnecting", "err"); setStatus("reconnecting…", "err"); maybeReconnect(); }
+  else { log("disconnected"); setStatus("disconnected"); }
+}
+function disconnect() {
+  wantConnected = false; clearTimeout(reconnectTimer);
+  if (device && device.gatt.connected) device.gatt.disconnect(); else onDisconnect();
+}
+async function write(cmd) {
+  if (!cmdChar) { log("(no device) would send " + cmd, "t"); return false; }
+  try {
+    const data = new TextEncoder().encode(cmd);
+    if (cmdChar.writeValueWithResponse) await cmdChar.writeValueWithResponse(data); else await cmdChar.writeValue(data);
+    log("→ " + cmd, "tx"); if (navigator.vibrate) navigator.vibrate(10); return true;
+  } catch (e) { log("write failed: " + e.message, "err"); return false; }
+}
+connectBtn.addEventListener("click", connect);
+disconnectBtn.addEventListener("click", disconnect);
+
+// ============ geo helpers ============
+function haversine(a, b) {
+  const R = 6371000, r = (x) => (x * Math.PI) / 180;
+  const dLat = r(b[0] - a[0]), dLon = r(b[1] - a[1]);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(r(a[0])) * Math.cos(r(b[0])) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+// Valhalla polyline, precision 6
+function decodePolyline(str, precision = 6) {
+  let i = 0, lat = 0, lng = 0; const out = []; const f = 10 ** precision;
+  while (i < str.length) {
+    let b, shift = 0, result = 1;
+    do { b = str.charCodeAt(i++) - 63 - 1; result += b << shift; shift += 5; } while (b >= 0x1f);
+    lat += result & 1 ? ~(result >> 1) : result >> 1;
+    shift = 0; result = 1;
+    do { b = str.charCodeAt(i++) - 63 - 1; result += b << shift; shift += 5; } while (b >= 0x1f);
+    lng += result & 1 ? ~(result >> 1) : result >> 1;
+    out.push([lat / f, lng / f]);
+  }
+  return out;
+}
+function dirForType(t) {
+  if ([4, 5, 6].includes(t)) return "A";                                   // destination
+  if ([12, 13].includes(t)) return "U";                                    // u-turn
+  if ([9, 10, 11, 18, 20, 23, 37].includes(t)) return "R";                 // right-ish
+  if ([14, 15, 16, 19, 21, 24, 38].includes(t)) return "L";                // left-ish
+  return "S";                                                              // straight / continue / roundabout
+}
+const GLYPH = { L: "◀", R: "▶", S: "▲", U: "↺", A: "⚑" };
+
+// ============ route ============
+let map = null, destMarker = null, routeLine = null, userMarker = null;
+let dest = null, userLatLng = null, follow = true;
+let routeShape = [], maneuvers = [], summary = null;
+
+function fmtPlace(p) {
+  if (!p) return "";
+  const n = p.name || p.street || [p.housenumber, p.street].filter(Boolean).join(" ");
+  return [n, p.city || p.town || p.village, p.state, p.country].filter(Boolean).slice(0, 3).join(", ");
+}
+function setDest(lat, lng, name) {
+  dest = { lat, lng, name: name || null };
+  destMarker.setLatLng([lat, lng]);
+  $("destLabel").textContent = name || lat.toFixed(5) + ", " + lng.toFixed(5);
+  $("routeInfo").textContent = "Destination set — press Go";
+  if (!name) reverseGeocode(lat, lng);
+}
+async function reverseGeocode(lat, lng) {
+  try {
+    const j = await (await fetch(`https://photon.komoot.io/reverse?lon=${lng}&lat=${lat}`)).json();
+    const f = j.features && j.features[0];
+    if (f) { const n = fmtPlace(f.properties); if (n) { dest.name = n; $("destLabel").textContent = n; } }
+  } catch (e) {}
+}
+
+function initMap() {
+  if (!window.L) { log("map failed to load (offline?)", "err"); $("map").style.display = "none"; return; }
+  map = L.map("map", { zoomControl: true }).setView([40.73, -73.99], 13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(map);
+  destMarker = L.marker([40.73, -73.99], { draggable: true }).addTo(map);
+  destMarker.on("dragend", () => { const ll = destMarker.getLatLng(); setDest(ll.lat, ll.lng); });
+  map.on("click", (e) => { destMarker.setLatLng(e.latlng); setDest(e.latlng.lat, e.latlng.lng); });
+  locateMe(true);
+}
+function locateMe(silent) {
+  if (!navigator.geolocation) { if (!silent) log("geolocation unavailable", "err"); return; }
+  navigator.geolocation.getCurrentPosition(
+    (p) => { userLatLng = [p.coords.latitude, p.coords.longitude]; updateUser(); if (!silent) log("located you", "rx"); },
+    (e) => { if (!silent) log("location denied: " + e.message, "err"); },
+    { enableHighAccuracy: true, timeout: 8000 }
+  );
+}
+function updateUser() {
+  if (!userLatLng || !map) return;
+  if (!userMarker) userMarker = L.circleMarker(userLatLng, { radius: 7, color: "#00dc50", fillColor: "#00dc50", fillOpacity: 1 }).addTo(map);
+  else userMarker.setLatLng(userLatLng);
+  if (follow) map.setView(userLatLng, Math.max(map.getZoom(), 16));
+}
+$("myLocBtn").addEventListener("click", () => { follow = true; locateMe(false); });
+
+let searchTimer;
+$("search").addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  const q = $("search").value.trim();
+  if (q.length < 3) { $("sugg").innerHTML = ""; return; }
+  searchTimer = setTimeout(() => doSearch(q), 450);
+});
+async function doSearch(q) {
+  try {
+    const j = await (await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6`)).json();
+    const box = $("sugg"); box.innerHTML = "";
+    (j.features || []).forEach((f) => {
+      const [lon, lat] = f.geometry.coordinates;
+      const name = fmtPlace(f.properties) || lat.toFixed(4) + ", " + lon.toFixed(4);
+      const b = document.createElement("button");
+      b.className = "sugg-item"; b.textContent = name;
+      b.onclick = () => { box.innerHTML = ""; $("search").value = name; map.setView([lat, lon], 15); setDest(lat, lon, name); };
+      box.appendChild(b);
+    });
+  } catch (e) { log("search failed: " + e.message, "err"); }
+}
+
+function currentMode() { return document.querySelector('input[name="mode"]:checked').value; }
+
+// ============ navigation loop ============
+let watchId = null, navigating = false;
+let curIdx = 0, lastAnnounced = -1, lastBucket = -1, blinkedFor = -1;
+
+async function go() {
+  if (!dest) { log("pick a destination first", "err"); return; }
+  if (!userLatLng || haversine(userLatLng, [dest.lat, dest.lng]) < 15) {
+    log("waiting for your location…");
+    locateMe(false);
+    if (!userLatLng) return;
+  }
+  const costing = COSTING[currentMode()];
+  log(`routing (${costing})…`);
+  try {
+    const body = { locations: [{ lat: userLatLng[0], lon: userLatLng[1] }, { lat: dest.lat, lon: dest.lng }],
+      costing, directions_options: { units: "kilometers" } };
+    const j = await (await fetch(VALHALLA, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })).json();
+    if (!j.trip) throw new Error(j.error || "no route");
+    const leg = j.trip.legs[0];
+    routeShape = decodePolyline(leg.shape);
+    maneuvers = leg.maneuvers;
+    summary = j.trip.summary;
+
+    if (routeLine) map.removeLayer(routeLine);
+    routeLine = L.polyline(routeShape, { color: "#00dc50", weight: 5, opacity: 0.85 }).addTo(map);
+    map.fitBounds(routeLine.getBounds(), { padding: [30, 30] });
+    follow = true;
+
+    curIdx = 0; lastAnnounced = -1; lastBucket = -1; blinkedFor = -1;
+    navigating = true;
+    goBtn.disabled = true; stopBtn.disabled = false;
+    $("routeInfo").textContent = `${summary.length.toFixed(1)} km · ~${Math.round(summary.time / 60)} min`;
+    log(`route ok: ${summary.length.toFixed(1)} km, ${maneuvers.length} maneuvers`);
+
+    watchId = navigator.geolocation.watchPosition(onPos,
+      (e) => log("gps error: " + e.message, "err"),
+      { enableHighAccuracy: true, maximumAge: 1000, timeout: 12000 });
+  } catch (e) { log("routing failed: " + e.message, "err"); }
+}
+
+function stop(clearDevice) {
+  navigating = false;
+  if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  goBtn.disabled = false; stopBtn.disabled = true;
+  if (clearDevice) write("X");
+  log("navigation stopped");
+}
+goBtn.addEventListener("click", go);
+stopBtn.addEventListener("click", () => stop(true));
+
+let lastPos = null;
+function onPos(pos) {
+  const p = [pos.coords.latitude, pos.coords.longitude];
+  userLatLng = p; lastPos = p; updateUser();
+  if (!navigating || !routeShape.length) return;
+
+  curIdx = nearestIndex(p);
+  const j = nextManeuverIndex(curIdx);
+  if (j < 0) return;
+  const m = maneuvers[j];
+  const at = routeShape[m.begin_shape_index] || p;
+  const dist = Math.round(haversine(p, at));
+  const dir = dirForType(m.type);
+  const street = ((m.street_names && m.street_names[0]) || "").replace(/[:]/g, "").slice(0, 10);
+
+  // on-screen instruction (mirrors the device)
+  $("iArrow").textContent = GLYPH[dir] || "▲";
+  $("iStreet").textContent = m.street_names && m.street_names[0] ? m.street_names[0] : (dir === "A" ? "Arrive" : "Continue");
+  $("iDist").innerHTML = `<b>${dist} m</b> · ${dir === "A" ? "arriving" : "to the turn"}`;
+
+  const payload = (blink) => dir + (blink && BLINKABLE.includes(dir) ? "B" : "") +
+    (street || dist != null ? ":" + street : "") + (dist != null ? ":" + dist : "");
+
+  if (dir === "A") {
+    if (dist <= ARRIVE_M && lastAnnounced !== j) { lastAnnounced = j; write("A"); }
+    return;
+  }
+  // announce the upcoming turn (and refresh distance every BUCKET_M)
+  const bucket = Math.floor(dist / BUCKET_M);
+  if (j !== lastAnnounced || bucket !== lastBucket) {
+    if (j !== lastAnnounced) { lastAnnounced = j; blinkedFor = -1; }
+    lastBucket = bucket;
+    write(payload(false));
+  }
+  if (dist <= BLINK_M && blinkedFor !== j) { blinkedFor = j; write(payload(true)); }
+}
+function nearestIndex(p) {
+  let best = 0, bestD = Infinity;
+  const start = Math.max(0, curIdx - 5);
+  for (let i = start; i < routeShape.length; i++) {
+    const d = haversine(p, routeShape[i]);
+    if (d < bestD) { bestD = d; best = i; }
+    if (d > bestD + 200) break;   // moved well past the nearest point
+  }
+  return best;
+}
+function nextManeuverIndex(idx) {
+  for (let i = 0; i < maneuvers.length; i++) if (maneuvers[i].begin_shape_index > idx) return i;
+  return maneuvers.length - 1;
+}
+
+// ============ boot ============
+initMap();
+setStatus("disconnected");
+</script>
+</body>
+</html>
