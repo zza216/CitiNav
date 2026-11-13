@@ -59,6 +59,7 @@ Open the https URL → **Connect device** → pick a destination → **Go**.
 | Doc | What |
 |---|---|
 | [`docs/SETUP.md`](docs/SETUP.md) | **Setup guide** — flash, serve, **Cloudflare Tunnel**, connect |
+| [`docs/TESTING.md`](docs/TESTING.md) | **Testing guide** — smoke test → terminal → web app → nav run |
 | [`docs/CITINAV.md`](docs/CITINAV.md) | Project plan + BLE contract |
 | [`docs/WEBAPP-TECHNICAL.md`](docs/WEBAPP-TECHNICAL.md) · [`.html`](docs/WEBAPP-TECHNICAL.html) | Full technical reference (HTML has all code embedded) |
 | [`docs/CITINAV-MOBILEAPP-PLAN.md`](docs/CITINAV-MOBILEAPP-PLAN.md) | Native Android plan (notification mirroring) |
