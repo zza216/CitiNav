@@ -52,6 +52,9 @@ BLE_NAME = "CitiNav"
 BLINK_MS = 300            # blink half-period (ms)
 HOLD_MS  = 300            # minimum time each command stays on screen
 BANNER_H = 38             # top banner height (fits the 16x32 street font)
+STREET_MAX = 40           # longest street kept (W // 8 small-font chars)
+BIG_CHARS = W // 16       # streets up to this length use the big font
+CMD_BUF = 128             # BLE command buffer; MicroPython's default is 20 bytes
 ARROW_Y0 = BANNER_H       # arrows area top
 LABEL_Y  = H - 18         # bottom label baseline
 ARROW_H  = LABEL_Y - ARROW_Y0   # arrows area height
@@ -201,13 +204,18 @@ def draw_bicycle(cx, cy, color):
 
 
 def draw_banner(blink, street):
-    """Top banner with the large street name, horizontally centred."""
+    """Top banner with the street name, horizontally centred.
+
+    Up to BIG_CHARS (20) characters use the 16x32 font; longer names drop to
+    the 8x16 font so up to STREET_MAX (40) still fit without being cut off.
+    """
     tft.fill_rect(0, 0, W, BANNER_H, BANNER)
     if street:
-        x = (W - len(street) * 16) // 2
+        f = bigfont if len(street) <= BIG_CHARS else font
+        x = (W - len(street) * f.WIDTH) // 2
         if x < 0:
             x = 0
-        tft.text(bigfont, street, x, (BANNER_H - 32) // 2, st7789.WHITE, BANNER)
+        tft.text(f, street, x, (BANNER_H - f.HEIGHT) // 2, st7789.WHITE, BANNER)
     if blink:
         tft.fill_rect(W - 10, 4, 6, 6, st7789.YELLOW)   # blink indicator
 
@@ -351,6 +359,9 @@ def ble_setup():
     except Exception:
         pass
     ((cmd_handle, st_handle),) = ble.gatts_register_services((_SERVICE,))
+    # Without this, writes longer than 20 bytes are silently truncated, which
+    # chops street names (e.g. "R:Washington Sq N:120" is 21 bytes).
+    ble.gatts_set_buffer(cmd_handle, CMD_BUF)
     ble.gatts_write(st_handle, b"ready")
     ble.irq(irq)
     advertise()
@@ -392,7 +403,9 @@ def main():
                 cur_blink = len(cmd) > 1 and cmd[1] == "B"
                 cur_dist = dist
                 if street is not None:
-                    STREETS[d] = street[:10]
+                    # fonts are ASCII-only: replace anything else with '?'
+                    clean = "".join(c if " " <= c <= "~" else "?" for c in street)
+                    STREETS[d] = clean[:STREET_MAX].strip()
                 if d in ("L", "R", "S"):
                     show_dir(cur_dir, cur_blink)
                 elif d == "U":

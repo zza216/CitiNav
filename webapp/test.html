@@ -125,7 +125,7 @@
   <section id="tab-control" class="tab hidden">
     <div class="fieldset">
       <label style="flex:2">Street
-        <input id="street" type="text" maxlength="10" placeholder="Broadway" autocomplete="off">
+        <input id="street" type="text" maxlength="40" placeholder="Broadway" autocomplete="off">
       </label>
       <label style="flex:1">Dist m
         <input id="dist" type="number" min="0" max="9999" inputmode="numeric" placeholder="30">
@@ -164,6 +164,7 @@
 </nav>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="street.js"></script>
 <script>
 "use strict";
 
@@ -216,7 +217,7 @@ function buildCmd(dir) {
   let cmd = dir;
   if (BLINKABLE.includes(dir) && blinkEl.checked) cmd += "B";
   const street = streetEl.value.trim(), dist = distEl.value.trim();
-  if (street || dist) { cmd += ":" + street.slice(0, 10); if (dist) cmd += ":" + dist; }
+  if (street || dist) { cmd += ":" + shortStreet(street); if (dist) cmd += ":" + dist; }
   return cmd;
 }
 function refreshPreview() { previewEl.textContent = buildCmd("R"); }
@@ -398,7 +399,7 @@ function currentMode() { return document.querySelector('input[name="mode"]:check
 async function startMaps() {
   if (!dest) { log("pick a destination first", "err"); return; }
   // give the device an immediate banner (destination) while Maps opens
-  const name = (dest.name || "DEST").split(",")[0].slice(0, 10);
+  const name = shortStreet((dest.name || "DEST").split(",")[0]);
   await write("S:" + name);
   const mode = GM_MODE[currentMode()];
   const url = `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}` +

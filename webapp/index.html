@@ -67,6 +67,14 @@
     white-space:pre-wrap; word-break:break-word}
   .t{color:var(--muted)} .tx{color:var(--yellow)} .rx{color:var(--green)} .err{color:var(--danger)}
   .leaflet-container{font:inherit}
+
+  /* simulate mode */
+  .sim{display:flex; flex-direction:column; gap:8px; padding:12px; border:1px dashed #6a6a3a;
+    border-radius:12px; background:#26261f}
+  .simhead{display:flex; justify-content:space-between; align-items:center; font-size:14px; color:var(--yellow)}
+  .sim small{color:var(--muted); font-size:13px}
+  select{font:inherit; font-size:14px; color:var(--text); background:var(--bg2); border:1px solid #4a4a4a;
+    border-radius:8px; padding:4px 8px}
 </style>
 </head>
 <body>
@@ -115,6 +123,24 @@
     <button id="stopBtn" class="danger grow" disabled>■ Stop</button>
   </div>
 
+  <div class="sim">
+    <div class="simhead">
+      <span>🧪 Simulate — no movement needed</span>
+      <label>speed
+        <select id="simSpeed">
+          <option value="1">1×</option>
+          <option value="5" selected>5×</option>
+          <option value="20">20×</option>
+        </select>
+      </label>
+    </div>
+    <small id="simFrom">Start: your current location</small>
+    <div class="row">
+      <button id="demoBtn" class="grow">☕ Caffè Panna → NYU Stern</button>
+      <button id="simBtn" class="grow">🧪 Simulate ride</button>
+    </div>
+  </div>
+
   <div class="logwrap">
     <div class="loghead"><span>Log</span><button id="clearBtn">clear</button></div>
     <pre id="log"></pre>
@@ -122,6 +148,7 @@
 </main>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="street.js"></script>
 <script>
 "use strict";
 
@@ -312,17 +339,21 @@ function currentMode() { return document.querySelector('input[name="mode"]:check
 let watchId = null, navigating = false;
 let curIdx = 0, lastAnnounced = -1, lastBucket = -1, blinkedFor = -1;
 
-async function go() {
+async function go(opts = {}) {
+  const simulate = !!opts.simulate;
+  if (navigating) return;
   if (!dest) { log("pick a destination first", "err"); return; }
-  if (!userLatLng || haversine(userLatLng, [dest.lat, dest.lng]) < 15) {
-    log("waiting for your location…");
+  const origin = simulate ? (simOrigin || userLatLng) : userLatLng;
+  if (!origin) {
+    log(simulate ? "no start point — tap the demo route or allow location" : "waiting for your location…", "err");
     locateMe(false);
-    if (!userLatLng) return;
+    return;
   }
+  if (haversine(origin, [dest.lat, dest.lng]) < 15) { log("start and destination are the same spot", "err"); return; }
   const costing = COSTING[currentMode()];
-  log(`routing (${costing})…`);
+  log(`routing (${costing})${simulate ? " [simulated]" : ""}…`);
   try {
-    const body = { locations: [{ lat: userLatLng[0], lon: userLatLng[1] }, { lat: dest.lat, lon: dest.lng }],
+    const body = { locations: [{ lat: origin[0], lon: origin[1] }, { lat: dest.lat, lon: dest.lng }],
       costing, directions_options: { units: "kilometers" } };
     const j = await (await fetch(VALHALLA, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })).json();
     if (!j.trip) throw new Error(j.error || "no route");
@@ -338,12 +369,14 @@ async function go() {
 
     curIdx = 0; lastAnnounced = -1; lastBucket = -1; blinkedFor = -1;
     navigating = true;
-    goBtn.disabled = true; stopBtn.disabled = false;
+    keepScreenOn();
+    goBtn.disabled = true; simBtn.disabled = true; stopBtn.disabled = false;
     $("routeInfo").textContent = `${summary.length.toFixed(1)} km · ~${Math.round(summary.time / 60)} min`;
     log(`route ok: ${summary.length.toFixed(1)} km, ${maneuvers.length} maneuvers`);
 
-    watchId = navigator.geolocation.watchPosition(onPos,
-      (e) => log("gps error: " + e.message, "err"),
+    if (simulate) startSim();
+    else watchId = navigator.geolocation.watchPosition(onPos,
+      (e) => log(`gps error ${e.code}: ${e.message}`, "err"),
       { enableHighAccuracy: true, maximumAge: 1000, timeout: 12000 });
   } catch (e) { log("routing failed: " + e.message, "err"); }
 }
@@ -351,12 +384,106 @@ async function go() {
 function stop(clearDevice) {
   navigating = false;
   if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-  goBtn.disabled = false; stopBtn.disabled = true;
+  if (simTimer !== null) { clearInterval(simTimer); simTimer = null; }
+  releaseScreen();
+  goBtn.disabled = false; simBtn.disabled = false; stopBtn.disabled = true;
   if (clearDevice) write("X");
   log("navigation stopped");
 }
-goBtn.addEventListener("click", go);
+goBtn.addEventListener("click", () => go());
 stopBtn.addEventListener("click", () => stop(true));
+
+// ============ keep the screen on while navigating ============
+// Chrome pauses GPS (watchPosition) and timers once the screen turns off or the
+// tab is backgrounded, so the device would stop getting turns. A screen wake
+// lock stops the phone from auto-locking mid-ride. The browser drops the lock
+// whenever the page is hidden, so it is re-requested when the page comes back.
+let wakeLock = null;
+async function keepScreenOn(quiet) {
+  if (wakeLock) return;
+  if (!("wakeLock" in navigator)) {
+    if (!quiet) log("this browser can't keep the screen on — turn off auto-lock while riding", "err");
+    return;
+  }
+  try {
+    const lock = await navigator.wakeLock.request("screen");
+    if (!navigating) { lock.release().catch(() => {}); return; }   // stopped while we waited
+    wakeLock = lock;
+    lock.addEventListener("release", () => { if (wakeLock === lock) wakeLock = null; });
+    if (!quiet) log("screen will stay on while navigating ☀", "rx");
+  } catch (e) {
+    if (!quiet) log("couldn't keep the screen on: " + e.message, "err");
+  }
+}
+function releaseScreen() {
+  const lock = wakeLock;
+  wakeLock = null;
+  if (lock) lock.release().catch(() => {});
+}
+document.addEventListener("visibilitychange", () => {
+  if (!navigating) return;
+  if (document.visibilityState === "visible") {
+    keepScreenOn(true);
+    log("back in the app — navigation resumed", "rx");
+  } else {
+    log("app hidden — turn updates pause until you return", "err");
+  }
+});
+
+// ============ simulate mode (fake GPS along the route) ============
+const SIM_SPEED_MPS = 5;      // ~18 km/h, a relaxed bike pace (× the speed picker)
+const SIM_TICK_MS   = 500;    // one fake GPS fix every half second
+const DEMO = {
+  from: { lat: 40.7370027, lng: -73.9867505, name: "Caffè Panna, 77 Irving Pl" },
+  to:   { lat: 40.7289742, lng: -73.9965041, name: "NYU Stern, 44 W 4th St" },
+};
+const simBtn = $("simBtn");
+let simTimer = null, simOrigin = null, simOriginMarker = null;
+
+function setSimOrigin(o) {
+  simOrigin = [o.lat, o.lng];
+  $("simFrom").textContent = "Start: " + o.name;
+  if (!map) return;
+  if (!simOriginMarker) {
+    simOriginMarker = L.circleMarker(simOrigin, { radius: 8, color: "#ffd700", fillColor: "#ffd700", fillOpacity: 0.9 })
+      .addTo(map).bindTooltip("Start");
+  } else simOriginMarker.setLatLng(simOrigin);
+}
+
+function startSim() {
+  // cumulative distance along the route so we can move at a constant speed
+  const cum = [0];
+  for (let i = 1; i < routeShape.length; i++) cum.push(cum[i - 1] + haversine(routeShape[i - 1], routeShape[i]));
+  const total = cum[cum.length - 1];
+  let s = 0, i = 0;
+  log(`simulating ride: ${Math.round(total)} m at ${$("simSpeed").value}× speed`, "rx");
+
+  const tick = () => {
+    const mult = Number($("simSpeed").value) || 1;          // read live so speed can change mid-ride
+    s = Math.min(total, s + SIM_SPEED_MPS * mult * SIM_TICK_MS / 1000);
+    while (i < cum.length - 2 && cum[i + 1] < s) i++;
+    const a = routeShape[i], b = routeShape[i + 1] || a;
+    const f = (s - cum[i]) / ((cum[i + 1] - cum[i]) || 1);
+    onPos({ coords: { latitude: a[0] + (b[0] - a[0]) * f, longitude: a[1] + (b[1] - a[1]) * f } });
+    if (s >= total) {
+      clearInterval(simTimer); simTimer = null;
+      setTimeout(() => { if (navigating) { log("simulation finished ✔", "rx"); stop(false); } }, 1500);
+    }
+  };
+  simTimer = setInterval(tick, SIM_TICK_MS);
+  tick();
+}
+
+$("demoBtn").addEventListener("click", () => {
+  if (!map) { log("map not loaded — can't set the demo route", "err"); return; }
+  if (navigating) stop(true);
+  setSimOrigin(DEMO.from);
+  setDest(DEMO.to.lat, DEMO.to.lng, DEMO.to.name);
+  $("search").value = DEMO.to.name;
+  map.fitBounds([[DEMO.from.lat, DEMO.from.lng], [DEMO.to.lat, DEMO.to.lng]], { padding: [40, 40] });
+  log("demo loaded: " + DEMO.from.name + " → " + DEMO.to.name + " — tap Simulate ride");
+});
+simBtn.addEventListener("click", () => go({ simulate: true }));
 
 let lastPos = null;
 function onPos(pos) {
@@ -371,7 +498,7 @@ function onPos(pos) {
   const at = routeShape[m.begin_shape_index] || p;
   const dist = Math.round(haversine(p, at));
   const dir = dirForType(m.type);
-  const street = ((m.street_names && m.street_names[0]) || "").replace(/[:]/g, "").slice(0, 10);
+  const street = shortStreet(m.street_names && m.street_names[0]);
 
   // on-screen instruction (mirrors the device)
   $("iArrow").textContent = GLYPH[dir] || "▲";
