@@ -230,7 +230,7 @@ that plays the role of the app**.
 `citinav_send.py` (uses `bleak`) — connects to `CitiNav` and writes commands.
 
 ```bash
-cd /Users/zakaria/Documents/pi/ESP32/LCD147
+cd /path/to/CitiNav                # the repo root
 ./citinav_send.py                 # interactive
 ./citinav_send.py L RB S          # one-shot arrows
 ./citinav_send.py LB              # blinking left
@@ -254,7 +254,7 @@ terminal sender but with a touch UI — Connect, tap ◀ ▲ ▶, tick **Blink**
 street name, and watch the `ack:` log.
 
 ```bash
-cd /Users/zakaria/Documents/pi/ESP32/LCD147
+cd /path/to/CitiNav                     # the repo root
 ./webapp/serve.sh                       # serves http://<mac-ip>:8000
 # phone needs a SECURE origin (https), so tunnel it:
 brew install cloudflared

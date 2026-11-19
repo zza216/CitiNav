@@ -401,7 +401,7 @@ advertise():       gap_advertise(None)   # stop any stale advertising
       <button id="expandAll" type="button">Expand all</button>
       <button id="collapseAll" type="button">Collapse all</button>
     </div>
-    <details class="file" id="file-webapp-index-html"><summary><span class="fname">webapp/index.html</span><span class="fmeta">html · 19426 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-html">&lt;!doctype html&gt;
+    <details class="file" id="file-webapp-index-html"><summary><span class="fname">webapp/index.html</span><span class="fmeta">html · 24946 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-html">&lt;!doctype html&gt;
 &lt;html lang=&quot;en&quot;&gt;
 &lt;head&gt;
 &lt;meta charset=&quot;utf-8&quot;&gt;
@@ -470,6 +470,14 @@ advertise():       gap_advertise(None)   # stop any stale advertising
     white-space:pre-wrap; word-break:break-word}
   .t{color:var(--muted)} .tx{color:var(--yellow)} .rx{color:var(--green)} .err{color:var(--danger)}
   .leaflet-container{font:inherit}
+
+  /* simulate mode */
+  .sim{display:flex; flex-direction:column; gap:8px; padding:12px; border:1px dashed #6a6a3a;
+    border-radius:12px; background:#26261f}
+  .simhead{display:flex; justify-content:space-between; align-items:center; font-size:14px; color:var(--yellow)}
+  .sim small{color:var(--muted); font-size:13px}
+  select{font:inherit; font-size:14px; color:var(--text); background:var(--bg2); border:1px solid #4a4a4a;
+    border-radius:8px; padding:4px 8px}
 &lt;/style&gt;
 &lt;/head&gt;
 &lt;body&gt;
@@ -518,6 +526,24 @@ advertise():       gap_advertise(None)   # stop any stale advertising
     &lt;button id=&quot;stopBtn&quot; class=&quot;danger grow&quot; disabled&gt;■ Stop&lt;/button&gt;
   &lt;/div&gt;
 
+  &lt;div class=&quot;sim&quot;&gt;
+    &lt;div class=&quot;simhead&quot;&gt;
+      &lt;span&gt;🧪 Simulate — no movement needed&lt;/span&gt;
+      &lt;label&gt;speed
+        &lt;select id=&quot;simSpeed&quot;&gt;
+          &lt;option value=&quot;1&quot;&gt;1×&lt;/option&gt;
+          &lt;option value=&quot;5&quot; selected&gt;5×&lt;/option&gt;
+          &lt;option value=&quot;20&quot;&gt;20×&lt;/option&gt;
+        &lt;/select&gt;
+      &lt;/label&gt;
+    &lt;/div&gt;
+    &lt;small id=&quot;simFrom&quot;&gt;Start: your current location&lt;/small&gt;
+    &lt;div class=&quot;row&quot;&gt;
+      &lt;button id=&quot;demoBtn&quot; class=&quot;grow&quot;&gt;☕ Caffè Panna → NYU Stern&lt;/button&gt;
+      &lt;button id=&quot;simBtn&quot; class=&quot;grow&quot;&gt;🧪 Simulate ride&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+
   &lt;div class=&quot;logwrap&quot;&gt;
     &lt;div class=&quot;loghead&quot;&gt;&lt;span&gt;Log&lt;/span&gt;&lt;button id=&quot;clearBtn&quot;&gt;clear&lt;/button&gt;&lt;/div&gt;
     &lt;pre id=&quot;log&quot;&gt;&lt;/pre&gt;
@@ -525,6 +551,7 @@ advertise():       gap_advertise(None)   # stop any stale advertising
 &lt;/main&gt;
 
 &lt;script src=&quot;https://unpkg.com/leaflet@1.9.4/dist/leaflet.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;street.js&quot;&gt;&lt;/script&gt;
 &lt;script&gt;
 &quot;use strict&quot;;
 
@@ -715,17 +742,21 @@ function currentMode() { return document.querySelector(&#x27;input[name=&quot;mo
 let watchId = null, navigating = false;
 let curIdx = 0, lastAnnounced = -1, lastBucket = -1, blinkedFor = -1;
 
-async function go() {
+async function go(opts = {}) {
+  const simulate = !!opts.simulate;
+  if (navigating) return;
   if (!dest) { log(&quot;pick a destination first&quot;, &quot;err&quot;); return; }
-  if (!userLatLng || haversine(userLatLng, [dest.lat, dest.lng]) &lt; 15) {
-    log(&quot;waiting for your location…&quot;);
+  const origin = simulate ? (simOrigin || userLatLng) : userLatLng;
+  if (!origin) {
+    log(simulate ? &quot;no start point — tap the demo route or allow location&quot; : &quot;waiting for your location…&quot;, &quot;err&quot;);
     locateMe(false);
-    if (!userLatLng) return;
+    return;
   }
+  if (haversine(origin, [dest.lat, dest.lng]) &lt; 15) { log(&quot;start and destination are the same spot&quot;, &quot;err&quot;); return; }
   const costing = COSTING[currentMode()];
-  log(`routing (${costing})…`);
+  log(`routing (${costing})${simulate ? &quot; [simulated]&quot; : &quot;&quot;}…`);
   try {
-    const body = { locations: [{ lat: userLatLng[0], lon: userLatLng[1] }, { lat: dest.lat, lon: dest.lng }],
+    const body = { locations: [{ lat: origin[0], lon: origin[1] }, { lat: dest.lat, lon: dest.lng }],
       costing, directions_options: { units: &quot;kilometers&quot; } };
     const j = await (await fetch(VALHALLA, { method: &quot;POST&quot;, headers: { &quot;Content-Type&quot;: &quot;application/json&quot; }, body: JSON.stringify(body) })).json();
     if (!j.trip) throw new Error(j.error || &quot;no route&quot;);
@@ -741,12 +772,14 @@ async function go() {
 
     curIdx = 0; lastAnnounced = -1; lastBucket = -1; blinkedFor = -1;
     navigating = true;
-    goBtn.disabled = true; stopBtn.disabled = false;
+    keepScreenOn();
+    goBtn.disabled = true; simBtn.disabled = true; stopBtn.disabled = false;
     $(&quot;routeInfo&quot;).textContent = `${summary.length.toFixed(1)} km · ~${Math.round(summary.time / 60)} min`;
     log(`route ok: ${summary.length.toFixed(1)} km, ${maneuvers.length} maneuvers`);
 
-    watchId = navigator.geolocation.watchPosition(onPos,
-      (e) =&gt; log(&quot;gps error: &quot; + e.message, &quot;err&quot;),
+    if (simulate) startSim();
+    else watchId = navigator.geolocation.watchPosition(onPos,
+      (e) =&gt; log(`gps error ${e.code}: ${e.message}`, &quot;err&quot;),
       { enableHighAccuracy: true, maximumAge: 1000, timeout: 12000 });
   } catch (e) { log(&quot;routing failed: &quot; + e.message, &quot;err&quot;); }
 }
@@ -754,12 +787,106 @@ async function go() {
 function stop(clearDevice) {
   navigating = false;
   if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-  goBtn.disabled = false; stopBtn.disabled = true;
+  if (simTimer !== null) { clearInterval(simTimer); simTimer = null; }
+  releaseScreen();
+  goBtn.disabled = false; simBtn.disabled = false; stopBtn.disabled = true;
   if (clearDevice) write(&quot;X&quot;);
   log(&quot;navigation stopped&quot;);
 }
-goBtn.addEventListener(&quot;click&quot;, go);
+goBtn.addEventListener(&quot;click&quot;, () =&gt; go());
 stopBtn.addEventListener(&quot;click&quot;, () =&gt; stop(true));
+
+// ============ keep the screen on while navigating ============
+// Chrome pauses GPS (watchPosition) and timers once the screen turns off or the
+// tab is backgrounded, so the device would stop getting turns. A screen wake
+// lock stops the phone from auto-locking mid-ride. The browser drops the lock
+// whenever the page is hidden, so it is re-requested when the page comes back.
+let wakeLock = null;
+async function keepScreenOn(quiet) {
+  if (wakeLock) return;
+  if (!(&quot;wakeLock&quot; in navigator)) {
+    if (!quiet) log(&quot;this browser can&#x27;t keep the screen on — turn off auto-lock while riding&quot;, &quot;err&quot;);
+    return;
+  }
+  try {
+    const lock = await navigator.wakeLock.request(&quot;screen&quot;);
+    if (!navigating) { lock.release().catch(() =&gt; {}); return; }   // stopped while we waited
+    wakeLock = lock;
+    lock.addEventListener(&quot;release&quot;, () =&gt; { if (wakeLock === lock) wakeLock = null; });
+    if (!quiet) log(&quot;screen will stay on while navigating ☀&quot;, &quot;rx&quot;);
+  } catch (e) {
+    if (!quiet) log(&quot;couldn&#x27;t keep the screen on: &quot; + e.message, &quot;err&quot;);
+  }
+}
+function releaseScreen() {
+  const lock = wakeLock;
+  wakeLock = null;
+  if (lock) lock.release().catch(() =&gt; {});
+}
+document.addEventListener(&quot;visibilitychange&quot;, () =&gt; {
+  if (!navigating) return;
+  if (document.visibilityState === &quot;visible&quot;) {
+    keepScreenOn(true);
+    log(&quot;back in the app — navigation resumed&quot;, &quot;rx&quot;);
+  } else {
+    log(&quot;app hidden — turn updates pause until you return&quot;, &quot;err&quot;);
+  }
+});
+
+// ============ simulate mode (fake GPS along the route) ============
+const SIM_SPEED_MPS = 5;      // ~18 km/h, a relaxed bike pace (× the speed picker)
+const SIM_TICK_MS   = 500;    // one fake GPS fix every half second
+const DEMO = {
+  from: { lat: 40.7370027, lng: -73.9867505, name: &quot;Caffè Panna, 77 Irving Pl&quot; },
+  to:   { lat: 40.7289742, lng: -73.9965041, name: &quot;NYU Stern, 44 W 4th St&quot; },
+};
+const simBtn = $(&quot;simBtn&quot;);
+let simTimer = null, simOrigin = null, simOriginMarker = null;
+
+function setSimOrigin(o) {
+  simOrigin = [o.lat, o.lng];
+  $(&quot;simFrom&quot;).textContent = &quot;Start: &quot; + o.name;
+  if (!map) return;
+  if (!simOriginMarker) {
+    simOriginMarker = L.circleMarker(simOrigin, { radius: 8, color: &quot;#ffd700&quot;, fillColor: &quot;#ffd700&quot;, fillOpacity: 0.9 })
+      .addTo(map).bindTooltip(&quot;Start&quot;);
+  } else simOriginMarker.setLatLng(simOrigin);
+}
+
+function startSim() {
+  // cumulative distance along the route so we can move at a constant speed
+  const cum = [0];
+  for (let i = 1; i &lt; routeShape.length; i++) cum.push(cum[i - 1] + haversine(routeShape[i - 1], routeShape[i]));
+  const total = cum[cum.length - 1];
+  let s = 0, i = 0;
+  log(`simulating ride: ${Math.round(total)} m at ${$(&quot;simSpeed&quot;).value}× speed`, &quot;rx&quot;);
+
+  const tick = () =&gt; {
+    const mult = Number($(&quot;simSpeed&quot;).value) || 1;          // read live so speed can change mid-ride
+    s = Math.min(total, s + SIM_SPEED_MPS * mult * SIM_TICK_MS / 1000);
+    while (i &lt; cum.length - 2 &amp;&amp; cum[i + 1] &lt; s) i++;
+    const a = routeShape[i], b = routeShape[i + 1] || a;
+    const f = (s - cum[i]) / ((cum[i + 1] - cum[i]) || 1);
+    onPos({ coords: { latitude: a[0] + (b[0] - a[0]) * f, longitude: a[1] + (b[1] - a[1]) * f } });
+    if (s &gt;= total) {
+      clearInterval(simTimer); simTimer = null;
+      setTimeout(() =&gt; { if (navigating) { log(&quot;simulation finished ✔&quot;, &quot;rx&quot;); stop(false); } }, 1500);
+    }
+  };
+  simTimer = setInterval(tick, SIM_TICK_MS);
+  tick();
+}
+
+$(&quot;demoBtn&quot;).addEventListener(&quot;click&quot;, () =&gt; {
+  if (!map) { log(&quot;map not loaded — can&#x27;t set the demo route&quot;, &quot;err&quot;); return; }
+  if (navigating) stop(true);
+  setSimOrigin(DEMO.from);
+  setDest(DEMO.to.lat, DEMO.to.lng, DEMO.to.name);
+  $(&quot;search&quot;).value = DEMO.to.name;
+  map.fitBounds([[DEMO.from.lat, DEMO.from.lng], [DEMO.to.lat, DEMO.to.lng]], { padding: [40, 40] });
+  log(&quot;demo loaded: &quot; + DEMO.from.name + &quot; → &quot; + DEMO.to.name + &quot; — tap Simulate ride&quot;);
+});
+simBtn.addEventListener(&quot;click&quot;, () =&gt; go({ simulate: true }));
 
 let lastPos = null;
 function onPos(pos) {
@@ -774,7 +901,7 @@ function onPos(pos) {
   const at = routeShape[m.begin_shape_index] || p;
   const dist = Math.round(haversine(p, at));
   const dir = dirForType(m.type);
-  const street = ((m.street_names &amp;&amp; m.street_names[0]) || &quot;&quot;).replace(/[:]/g, &quot;&quot;).slice(0, 10);
+  const street = shortStreet(m.street_names &amp;&amp; m.street_names[0]);
 
   // on-screen instruction (mirrors the device)
   $(&quot;iArrow&quot;).textContent = GLYPH[dir] || &quot;▲&quot;;
@@ -819,7 +946,7 @@ setStatus(&quot;disconnected&quot;);
 &lt;/body&gt;
 &lt;/html&gt;
 </code></pre></div></details>
-<details class="file" id="file-webapp-test-html"><summary><span class="fname">webapp/test.html</span><span class="fmeta">html · 19630 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-html">&lt;!doctype html&gt;
+<details class="file" id="file-webapp-test-html"><summary><span class="fname">webapp/test.html</span><span class="fmeta">html · 19664 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-html">&lt;!doctype html&gt;
 &lt;html lang=&quot;en&quot;&gt;
 &lt;head&gt;
 &lt;meta charset=&quot;utf-8&quot;&gt;
@@ -946,7 +1073,7 @@ setStatus(&quot;disconnected&quot;);
   &lt;section id=&quot;tab-control&quot; class=&quot;tab hidden&quot;&gt;
     &lt;div class=&quot;fieldset&quot;&gt;
       &lt;label style=&quot;flex:2&quot;&gt;Street
-        &lt;input id=&quot;street&quot; type=&quot;text&quot; maxlength=&quot;10&quot; placeholder=&quot;Broadway&quot; autocomplete=&quot;off&quot;&gt;
+        &lt;input id=&quot;street&quot; type=&quot;text&quot; maxlength=&quot;40&quot; placeholder=&quot;Broadway&quot; autocomplete=&quot;off&quot;&gt;
       &lt;/label&gt;
       &lt;label style=&quot;flex:1&quot;&gt;Dist m
         &lt;input id=&quot;dist&quot; type=&quot;number&quot; min=&quot;0&quot; max=&quot;9999&quot; inputmode=&quot;numeric&quot; placeholder=&quot;30&quot;&gt;
@@ -985,6 +1112,7 @@ setStatus(&quot;disconnected&quot;);
 &lt;/nav&gt;
 
 &lt;script src=&quot;https://unpkg.com/leaflet@1.9.4/dist/leaflet.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;street.js&quot;&gt;&lt;/script&gt;
 &lt;script&gt;
 &quot;use strict&quot;;
 
@@ -1037,7 +1165,7 @@ function buildCmd(dir) {
   let cmd = dir;
   if (BLINKABLE.includes(dir) &amp;&amp; blinkEl.checked) cmd += &quot;B&quot;;
   const street = streetEl.value.trim(), dist = distEl.value.trim();
-  if (street || dist) { cmd += &quot;:&quot; + street.slice(0, 10); if (dist) cmd += &quot;:&quot; + dist; }
+  if (street || dist) { cmd += &quot;:&quot; + shortStreet(street); if (dist) cmd += &quot;:&quot; + dist; }
   return cmd;
 }
 function refreshPreview() { previewEl.textContent = buildCmd(&quot;R&quot;); }
@@ -1219,7 +1347,7 @@ function currentMode() { return document.querySelector(&#x27;input[name=&quot;mo
 async function startMaps() {
   if (!dest) { log(&quot;pick a destination first&quot;, &quot;err&quot;); return; }
   // give the device an immediate banner (destination) while Maps opens
-  const name = (dest.name || &quot;DEST&quot;).split(&quot;,&quot;)[0].slice(0, 10);
+  const name = shortStreet((dest.name || &quot;DEST&quot;).split(&quot;,&quot;)[0]);
   await write(&quot;S:&quot; + name);
   const mode = GM_MODE[currentMode()];
   const url = `https://www.google.com/maps/dir/?api=1&amp;destination=${dest.lat},${dest.lng}` +
@@ -1262,12 +1390,13 @@ initMap();
   ]
 }
 </code></pre></div></details>
-<details class="file" id="file-webapp-sw-js"><summary><span class="fname">webapp/sw.js</span><span class="fmeta">javascript · 1058 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-javascript">// CitiNav service worker — cache the app shell so it installs and loads offline.
-const CACHE = &quot;citinav-v3&quot;;
+<details class="file" id="file-webapp-sw-js"><summary><span class="fname">webapp/sw.js</span><span class="fmeta">javascript · 1949 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-javascript">// CitiNav service worker — cache the app shell so it installs and loads offline.
+const CACHE = &quot;citinav-v8&quot;;
 const ASSETS = [
   &quot;./&quot;,
   &quot;./index.html&quot;,
   &quot;./test.html&quot;,
+  &quot;./street.js&quot;,
   &quot;./manifest.json&quot;,
   &quot;./icon-192.png&quot;,
   &quot;./icon-512.png&quot;,
@@ -1289,6 +1418,28 @@ self.addEventListener(&quot;activate&quot;, (e) =&gt; {
 
 self.addEventListener(&quot;fetch&quot;, (e) =&gt; {
   if (e.request.method !== &quot;GET&quot;) return;
+
+  // The app&#x27;s own files: network first, so a new version shows up on the next
+  // load (no URL tricks or cache bumps needed). Fall back to the cache offline.
+  if (new URL(e.request.url).origin === self.location.origin) {
+    e.respondWith(
+      // cache: &quot;no-cache&quot; makes the browser revalidate with the server instead
+      // of trusting its HTTP cache (cheap 304 when nothing changed).
+      fetch(e.request, { cache: &quot;no-cache&quot; })
+        .then((resp) =&gt; {
+          if (resp.ok) {
+            const copy = resp.clone();
+            caches.open(CACHE).then((c) =&gt; c.put(e.request, copy)).catch(() =&gt; {});
+          }
+          return resp;
+        })
+        .catch(() =&gt; caches.match(e.request, { ignoreSearch: true })
+          .then((hit) =&gt; hit || caches.match(&quot;./index.html&quot;)))
+    );
+    return;
+  }
+
+  // Third-party files (Leaflet, map tiles): cache first.
   e.respondWith(
     caches.match(e.request).then((hit) =&gt; {
       if (hit) return hit;
@@ -1402,7 +1553,7 @@ EOF
 
 exec python3 -m http.server &quot;$PORT&quot; --bind 0.0.0.0
 </code></pre></div></details>
-<details class="file" id="file-citinavlandscape-py"><summary><span class="fname">citinav_landscape.py</span><span class="fmeta">python · 15384 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-python"># CitiNav - Stage 1b / UI v2 (LANDSCAPE, 3-arrow UI)
+<details class="file" id="file-citinavlandscape-py"><summary><span class="fname">citinav_landscape.py</span><span class="fmeta">python · 16193 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-python"># CitiNav - Stage 1b / UI v2 (LANDSCAPE, 3-arrow UI)
 #
 # v2: this file is the boot app (main.py imports it). Same BLE contract as
 #     citinav.py; only the on-screen layout differs (three horizontal arrows).
@@ -1456,6 +1607,9 @@ BLE_NAME = &quot;CitiNav&quot;
 BLINK_MS = 300            # blink half-period (ms)
 HOLD_MS  = 300            # minimum time each command stays on screen
 BANNER_H = 38             # top banner height (fits the 16x32 street font)
+STREET_MAX = 40           # longest street kept (W // 8 small-font chars)
+BIG_CHARS = W // 16       # streets up to this length use the big font
+CMD_BUF = 128             # BLE command buffer; MicroPython&#x27;s default is 20 bytes
 ARROW_Y0 = BANNER_H       # arrows area top
 LABEL_Y  = H - 18         # bottom label baseline
 ARROW_H  = LABEL_Y - ARROW_Y0   # arrows area height
@@ -1605,13 +1759,18 @@ def draw_bicycle(cx, cy, color):
 
 
 def draw_banner(blink, street):
-    &quot;&quot;&quot;Top banner with the large street name, horizontally centred.&quot;&quot;&quot;
+    &quot;&quot;&quot;Top banner with the street name, horizontally centred.
+
+    Up to BIG_CHARS (20) characters use the 16x32 font; longer names drop to
+    the 8x16 font so up to STREET_MAX (40) still fit without being cut off.
+    &quot;&quot;&quot;
     tft.fill_rect(0, 0, W, BANNER_H, BANNER)
     if street:
-        x = (W - len(street) * 16) // 2
+        f = bigfont if len(street) &lt;= BIG_CHARS else font
+        x = (W - len(street) * f.WIDTH) // 2
         if x &lt; 0:
             x = 0
-        tft.text(bigfont, street, x, (BANNER_H - 32) // 2, st7789.WHITE, BANNER)
+        tft.text(f, street, x, (BANNER_H - f.HEIGHT) // 2, st7789.WHITE, BANNER)
     if blink:
         tft.fill_rect(W - 10, 4, 6, 6, st7789.YELLOW)   # blink indicator
 
@@ -1755,6 +1914,9 @@ def ble_setup():
     except Exception:
         pass
     ((cmd_handle, st_handle),) = ble.gatts_register_services((_SERVICE,))
+    # Without this, writes longer than 20 bytes are silently truncated, which
+    # chops street names (e.g. &quot;R:Washington Sq N:120&quot; is 21 bytes).
+    ble.gatts_set_buffer(cmd_handle, CMD_BUF)
     ble.gatts_write(st_handle, b&quot;ready&quot;)
     ble.irq(irq)
     advertise()
@@ -1796,7 +1958,9 @@ def main():
                 cur_blink = len(cmd) &gt; 1 and cmd[1] == &quot;B&quot;
                 cur_dist = dist
                 if street is not None:
-                    STREETS[d] = street[:10]
+                    # fonts are ASCII-only: replace anything else with &#x27;?&#x27;
+                    clean = &quot;&quot;.join(c if &quot; &quot; &lt;= c &lt;= &quot;~&quot; else &quot;?&quot; for c in street)
+                    STREETS[d] = clean[:STREET_MAX].strip()
                 if d in (&quot;L&quot;, &quot;R&quot;, &quot;S&quot;):
                     show_dir(cur_dir, cur_blink)
                 elif d == &quot;U&quot;:
@@ -1838,7 +2002,7 @@ def main():
 if __name__ == &quot;__main__&quot;:
     main()
 </code></pre></div></details>
-<details class="file" id="file-citinavsend-py"><summary><span class="fname">citinav_send.py</span><span class="fmeta">python · 3795 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-python">#!/Users/zakaria/.esptool-venv/bin/python
+<details class="file" id="file-citinavsend-py"><summary><span class="fname">citinav_send.py</span><span class="fmeta">python · 4304 bytes</span></summary><div class="codewrap"><button class="copy" type="button">copy</button><pre><code class="lang-python">#!/usr/bin/env python3
 &quot;&quot;&quot;CitiNav terminal sender - write arrows + street text to the ESP32 over BLE.
 
 Usage:
@@ -1858,8 +2022,21 @@ macOS:     grant your terminal Bluetooth access in
 &quot;&quot;&quot;
 
 import asyncio
+import os
 import sys
 import threading
+
+# Needs bleak (installed in ~/.esptool-venv by the setup docs). If the current
+# interpreter doesn&#x27;t have it, re-exec with that venv&#x27;s python when present, so
+# `./citinav_send.py ...` works without activating the venv.
+try:
+    import bleak  # noqa: F401
+except ImportError:
+    _venv = os.path.expanduser(&quot;~/.esptool-venv/bin/python&quot;)
+    if os.path.exists(_venv) and os.path.realpath(sys.executable) != os.path.realpath(_venv):
+        os.execv(_venv, [_venv, os.path.abspath(__file__), *sys.argv[1:]])
+    raise
+
 from bleak import BleakScanner, BleakClient
 
 NAME     = &quot;CitiNav&quot;

@@ -2,7 +2,7 @@
 
 **Date:** 03 Nov 2026
 **Machine:** Apple Silicon Mac (Apple T8122 / M4-class), macOS with DriverKit
-**Project dir:** `/Users/zakaria/Documents/pi/ESP32/LCD147/`
+**Project dir:** the CitiNav repository (`/path/to/CitiNav/`)
 
 ---
 
@@ -221,7 +221,7 @@ Example usage (from the project root):
 
 | Item | Value |
 |---|---|
-| Project dir | `/Users/zakaria/Documents/pi/ESP32/LCD147/` |
+| Project dir | the CitiNav repository (`/path/to/CitiNav/`) |
 | Firmware file | `ESP32_GENERIC_C6-20260824-v1.29.0.bin` |
 | esptool | `~/.esptool-venv/bin/esptool` (v5.6.0) |
 | mpremote | `~/.esptool-venv/bin/mpremote` |

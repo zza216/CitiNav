@@ -1,0 +1,11 @@
+# Mac-side tooling for CitiNav. The web server (and the whole app) needs none of
+# these — they are only for flashing the board and driving it over BLE.
+#
+#   python3 -m venv ~/.esptool-venv
+#   ~/.esptool-venv/bin/pip install -r requirements.txt
+#
+# The setup/testing docs assume the venv lives at ~/.esptool-venv (deploy.sh and
+# citinav_send.py look there automatically).
+mpremote
+esptool
+bleak

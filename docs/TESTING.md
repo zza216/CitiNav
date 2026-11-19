@@ -41,7 +41,7 @@ The fastest end-to-end test. `citinav_send.py` scans, connects, writes, and logs
 the `ack`.
 
 ```bash
-cd /Users/zakaria/Documents/pi/ESP32/LCD147
+cd /path/to/CitiNav                   # the repo root
 
 ./citinav_send.py "L:Broadway:45"     # left + banner + 45 m
 ./citinav_send.py R LB S U A X        # several in a row (one-shot)

@@ -174,7 +174,7 @@ tft.text(font, "Hello!", 10, 10, st7789.WHITE)
 
 | Item | Value |
 |---|---|
-| Project dir | `/Users/zakaria/Documents/pi/ESP32/LCD147/` |
+| Project dir | the CitiNav repository (`/path/to/CitiNav/`) |
 | Serial port | `/dev/cu.usbmodem101` (varies — check `mpremote devs`) |
 | esptool / mpremote | `~/.esptool-venv/bin/` |
 | Firmware | `ESP32_GENERIC_C6-20260824-v1.29.0.bin` |

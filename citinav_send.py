@@ -1,4 +1,4 @@
-#!/Users/zakaria/.esptool-venv/bin/python
+#!/usr/bin/env python3
 """CitiNav terminal sender - write arrows + street text to the ESP32 over BLE.
 
 Usage:
@@ -18,8 +18,21 @@ macOS:     grant your terminal Bluetooth access in
 """
 
 import asyncio
+import os
 import sys
 import threading
+
+# Needs bleak (installed in ~/.esptool-venv by the setup docs). If the current
+# interpreter doesn't have it, re-exec with that venv's python when present, so
+# `./citinav_send.py ...` works without activating the venv.
+try:
+    import bleak  # noqa: F401
+except ImportError:
+    _venv = os.path.expanduser("~/.esptool-venv/bin/python")
+    if os.path.exists(_venv) and os.path.realpath(sys.executable) != os.path.realpath(_venv):
+        os.execv(_venv, [_venv, os.path.abspath(__file__), *sys.argv[1:]])
+    raise
+
 from bleak import BleakScanner, BleakClient
 
 NAME     = "CitiNav"

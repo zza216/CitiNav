@@ -31,7 +31,11 @@ certificate.
 
 - **Mac** with the board connected over USB for flashing (data-capable cable).
 - **ESP32-C6-LCD-1.47** flashed with MicroPython v1.29 (`ESP32_GENERIC_C6`).
-- Python venv at `~/.esptool-venv` with `esptool`, `mpremote`, `bleak`.
+- Python venv at `~/.esptool-venv` with `esptool`, `mpremote`, `bleak`:
+  ```bash
+  python3 -m venv ~/.esptool-venv
+  ~/.esptool-venv/bin/pip install -r requirements.txt
+  ```
 - **Android phone** with **Chrome** (iOS/Safari has no Web Bluetooth).
 - `brew` for installing `cloudflared`.
 
@@ -40,7 +44,7 @@ certificate.
 ## A. Flash the device
 
 ```bash
-cd /Users/zakaria/Documents/pi/ESP32/LCD147
+cd /path/to/CitiNav                      # the repo root (git clone, then cd in)
 ~/.esptool-venv/bin/mpremote devs        # find the /dev/cu.usbmodem* port
 ./deploy.sh                              # auto-detects the port, copies firmware, reboots
 ```
@@ -54,6 +58,10 @@ the board advertising over BLE.
 ---
 
 ## B. Serve the web app on the Mac
+
+> **Shortcut:** `./run.sh start` does **B + C in one command** — serves `webapp/`
+> and opens the Cloudflare tunnel, printing both URLs. `./run.sh status` /
+> `./run.sh stop` manage it. The manual steps below are what it runs.
 
 ```bash
 ./webapp/serve.sh            # binds 0.0.0.0:8000 and prints the URLs
@@ -151,12 +159,10 @@ root CA on the phone. More setup, fully offline.
 # 1. flash
 ./deploy.sh
 
-# 2. serve (Mac)
-./webapp/serve.sh
-
-# 3. tunnel (2nd terminal)
-cloudflared tunnel --url http://localhost:8000
+# 2+3. serve + tunnel in one command (prints both URLs)
+./run.sh start
 #    → open the https://…trycloudflare.com URL on the phone's Chrome
+#    (manual: ./webapp/serve.sh  then  cloudflared tunnel --url http://localhost:8000)
 
 # 4. quick Mac test without a phone
 ./citinav_send.py "L:Broadway:45"

@@ -24,6 +24,7 @@ the next turn — no need to look at the phone while riding.
 | **Test app** | Map picker → Google Maps handoff + manual controls | `webapp/test.html` |
 | **Terminal sender** | Drive the device from a Mac | `citinav_send.py` |
 | **Deploy** | Copy firmware + reboot the board | `deploy.sh` |
+| **Run** | Serve the web UI + open a Cloudflare tunnel (`start`/`stop`/`status`) | `run.sh` |
 
 ## BLE contract
 
@@ -32,26 +33,49 @@ the next turn — no need to look at the phone while riding.
 - Payload: `<dir>[B][:<street>[:<dist_m>]]` where `dir ∈ L R S U A X`, `B` = blink.
 - Ack: `ack:<cmd>`.
 
-## Quick start
+## Start using the UI
 
-**Device** (MicroPython v1.29 on the Waveshare ESP32-C6-LCD-1.47):
+Four steps from a blank board to turn-by-turn arrows on the handlebars.
+
+**1. Flash the device** (MicroPython v1.29 on the Waveshare ESP32-C6-LCD-1.47,
+plugged in over USB):
 ```bash
 ./deploy.sh            # copies main.py + citinav_landscape.py + reset
 ```
+The LCD should boot to **`CitiNav`** in yellow with a green bicycle, and the
+board starts advertising over BLE.
 
-**Phone app** (Chrome on Android/desktop — Web Bluetooth):
+**2. Serve the web UI — one command (server + https tunnel):**
 ```bash
-./webapp/serve.sh                        # serves on the LAN
-cloudflared tunnel --url http://localhost:8000   # https for the phone
+./run.sh start     # serves webapp/ on :8000 + a Cloudflare tunnel; prints both URLs
 ```
-Open the https URL → **Connect device** → pick a destination → **Go**.
+It prints `http://localhost:8000` and a public `https://…trycloudflare.com` URL.
+`./run.sh status` shows what's running, `./run.sh stop` shuts it down. Prefer to do
+it by hand? `./webapp/serve.sh`, then
+`cloudflared tunnel --url http://localhost:8000` in a second terminal.
 
-> 📶 Full step-by-step, including the **Cloudflare Tunnel** setup, is in
-> [`docs/SETUP.md`](docs/SETUP.md).
+**3. Open the UI:**
+- **On the Mac** — **http://localhost:8000** in Chrome (already a secure context,
+  so Web Bluetooth works).
+- **On the phone** — open the printed **https://…trycloudflare.com** URL in
+  **Android Chrome**.
 
-**Mac quick test** (no tunnel):
+**4. Use the UI:**
+1. Tap **Connect device** → pick **`CitiNav`** in the chooser.
+2. **Nav** (`index.html`) — search/tap a destination → choose **🚲 Bike** → **▶ Go**.
+   The app tracks your GPS and auto-sends the turns; the LCD shows arrow + street
+   + distance. Tap **■ Stop** when done.
+3. **Test** (`test.html`) — manual arrows (`◀ ▲ ▶ ↺ ⚑ ✕`), blink toggle, and
+   **Start in Google Maps** handoff.
+
+> 📶 Full step-by-step — flashing, serving, the **Cloudflare Tunnel**, install-as-PWA
+> and troubleshooting — is in [`docs/SETUP.md`](docs/SETUP.md). Ride-through check
+> in [`docs/TESTING.md`](docs/TESTING.md).
+
+**No phone/tunnel? Test from the Mac:**
 ```bash
-./citinav_send.py "L:Broadway:45"        # left arrow + street + 45 m
+./webapp/serve.sh          # open http://localhost:8000 in Chrome → Connect device
+./citinav_send.py "L:Broadway:45"        # or drive it from the terminal
 ```
 
 ## Documentation

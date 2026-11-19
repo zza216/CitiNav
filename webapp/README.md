@@ -54,8 +54,8 @@ Payload grammar: `"<dir>[B][:<street>[:<dist_m>]]"`.
 
 ### On this Mac (quickest — secure context via localhost)
 ```bash
-cd /Users/zakaria/Documents/pi/ESP32/LCD147
-./webapp/serve.sh
+./run.sh start          # from the repo root: serve + tunnel in one command
+#   or: ./webapp/serve.sh        (localhost only)
 # open http://localhost:8000 in Chrome  (Nav)  — or /test.html (Test)
 ```
 
